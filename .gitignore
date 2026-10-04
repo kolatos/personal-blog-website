@@ -5,3 +5,4 @@ test-results/
 .env
 *.local
 dist/
+.vite/
