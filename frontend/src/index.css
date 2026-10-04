@@ -1,0 +1,126 @@
+﻿@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Computer Modern font ── */
+@font-face {
+  font-family: 'Computer Modern';
+  src: url('/fonts/cmunrm.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Computer Modern';
+  src: url('/fonts/cmunbx.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Computer Modern';
+  src: url('/fonts/cmunti.woff2') format('woff2');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Computer Modern';
+  src: url('/fonts/cmunbi.woff2') format('woff2');
+  font-weight: bold;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ── Light mode tokens ── */
+:root {
+  --background: #dfe8f1;
+  --foreground: #000000;
+  --card: #d8e6f3;
+  --card-foreground: #0a0a0a;
+  --popover: #dfe8f1;
+  --popover-foreground: #0a0a0a;
+  --primary: #bb6588;
+  --primary-foreground: #fafafa;
+  --secondary: #ccaa87;
+  --secondary-foreground: #fafafa;
+  --muted: #d8e6f3;
+  --muted-foreground: #737373;
+  --accent: #bda5ad;
+  --accent-foreground: #fafafa;
+  --destructive: #e7000b;
+  --destructive-foreground: #ffffff;
+  --border: #c0cae7;
+  --input: #a0b3d9;
+  --ring: #bb6588;
+  --radius: 0.8rem;
+  --shadow-sm: 0 1px 0px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
+  --shadow-md: 0 1px 0px 0px hsl(0 0% 0% / 0.05), 0 2px 4px -1px hsl(0 0% 0% / 0.05);
+  --shadow-lg: 0 1px 0px 0px hsl(0 0% 0% / 0.05), 0 4px 6px -1px hsl(0 0% 0% / 0.05);
+}
+
+/* ── Dark mode tokens ── */
+.dark {
+  --background: #293d61;
+  --foreground: #fafafa;
+  --card: #385579;
+  --card-foreground: #fafafa;
+  --popover: #293d61;
+  --popover-foreground: #fafafa;
+  --primary: #bb6588;
+  --primary-foreground: #fafafa;
+  --secondary: #ccaa87;
+  --secondary-foreground: #fafafa;
+  --muted: #385579;
+  --muted-foreground: #9fb8d2;
+  --accent: #bda5ad;
+  --accent-foreground: #fafafa;
+  --destructive: #ff6467;
+  --destructive-foreground: #fafafa;
+  --border: #1c2641;
+  --input: #223760;
+  --ring: #bb6588;
+}
+
+/* ── Tailwind v4 theme mapping ── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: 'Computer Modern', ui-serif, Georgia, Cambria, serif;
+  --font-serif: 'Computer Modern', ui-serif, Georgia, Cambria, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Computer Modern', ui-serif, Georgia, serif;
+  }
+}
