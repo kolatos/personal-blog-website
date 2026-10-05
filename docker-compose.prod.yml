@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16-alpine
+    env_file: ./backend/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+    networks:
+      - blog_network
+
+  migrate:
+    build:
+      context: ./backend
+      target: runner
+    env_file: ./backend/.env
+    command: npx prisma migrate deploy
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - blog_network
+
+  backend:
+    build:
+      context: ./backend
+      target: runner
+    env_file: ./backend/.env
+    ports:
+      - "3001:3001"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - blog_network
+
+  frontend:
+    build:
+      context: ./frontend
+      target: runner
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - blog_network
+
+volumes:
+  postgres_data:
+
+networks:
+  blog_network:
+    driver: bridge
