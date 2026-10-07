@@ -3,7 +3,9 @@
   "services": {
     "backend": {
       "root": "backend",
-      "framework": "express"
+      "framework": "express",
+      "entrypoint": "app.ts",
+      "builder": "@vercel/node"
     },
     "frontend": {
       "root": "frontend",
