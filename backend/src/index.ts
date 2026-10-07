@@ -7,4 +7,4 @@
  * This file exists so that any code which previously imported from `./index`
  * (e.g. tests) continues to work without changes.
  */
-export { default } from '../../api/app.js';
+export { default } from './app.js';
