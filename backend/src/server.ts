@@ -1,4 +1,4 @@
-import app from './app.js';
+import app from '../../api/app.js';
 import { startCleanupJob } from './jobs/cleanupBlacklist.js';
 
 const PORT = process.env.PORT ?? 3001;

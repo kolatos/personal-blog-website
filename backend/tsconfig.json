@@ -21,6 +21,6 @@
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/index.ts", "../api/app.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

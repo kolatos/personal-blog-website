@@ -100,7 +100,41 @@ Vercel biasanya menangani port otomatis. Kalau perlu, set:
 
 ---
 
-### 7. `RESEND_API_KEY` (untuk fitur email subscription — Stage 1)
+### 7. `ADMIN_EMAIL` (untuk seed database)
+
+Email akun admin yang dibuat saat `prisma db seed` pertama kali dijalankan.
+
+```
+kamu@gmail.com
+```
+
+> Dipakai hanya saat seed, bukan saat app running. Default jika tidak diset: `admin@blog.com`
+
+---
+
+### 8. `ADMIN_USERNAME_SEED` (untuk seed database)
+
+Username akun admin.
+
+```
+admin
+```
+
+> Default jika tidak diset: `admin`
+
+---
+
+### 9. `ADMIN_PASSWORD_SEED` ⚠️ Sangat Disarankan
+
+Password akun admin. **Ganti dari default** — siapapun yang tahu default value bisa login sebagai admin.
+
+Pilih password kuat (minimal 12 karakter, kombinasi huruf besar/kecil, angka, simbol).
+
+> Default jika tidak diset: `Admin1234!` — **jangan biarkan ini di production.**
+
+---
+
+### 10. `RESEND_API_KEY` (untuk fitur email subscription — Stage 1)
 
 Digunakan untuk mengirim email notifikasi ke subscriber ketika post baru dipublish.
 
@@ -116,7 +150,7 @@ Format: `re_xxxxxxxxxxxx`
 
 ---
 
-### 8. `RESEND_FROM_EMAIL` (untuk fitur email subscription — Stage 1)
+### 11. `RESEND_FROM_EMAIL` (untuk fitur email subscription — Stage 1)
 
 Alamat email pengirim. Harus domain yang sudah diverifikasi di Resend.
 
@@ -161,14 +195,16 @@ https://kirodico-backend.vercel.app
 
 1. **Siapkan database** — Buat project di Neon/Supabase, copy `DATABASE_URL`
 2. **Generate `JWT_SECRET`** — Jalankan perintah node di atas
-3. **Deploy backend dulu** — Tambahkan semua env var backend, deploy, pastikan `/api/health` atau `/api/posts` bisa diakses
-4. **Jalankan migrasi database** — Di Vercel dashboard atau via CLI:
+3. **Tentukan admin credential** — Set `ADMIN_EMAIL`, `ADMIN_USERNAME_SEED`, `ADMIN_PASSWORD_SEED`
+4. **Deploy backend dulu** — Tambahkan semua env var backend, deploy, pastikan `/api/health` atau `/api/posts` bisa diakses
+5. **Jalankan migrasi + seed database** — Di Vercel dashboard atau via CLI:
    ```bash
    vercel env pull .env.production
    npx prisma migrate deploy
+   npx prisma db seed
    ```
    Atau gunakan Vercel Build Command: tambahkan `npx prisma migrate deploy && node dist/server.js` di build settings
-5. **Deploy frontend** — Set `VITE_API_URL` ke URL backend yang sudah jadi, lalu deploy
+6. **Deploy frontend** — Set `VITE_API_URL` ke URL backend yang sudah jadi, lalu deploy
 
 ---
 
@@ -182,11 +218,16 @@ https://kirodico-backend.vercel.app
 | `JWT_USER_EXPIRES_IN` | Backend | ✅ | `7d` |
 | `NODE_ENV` | Backend | ✅ | `production` |
 | `PORT` | Backend | ❌ | `3001` |
+| `ADMIN_EMAIL` | Backend | ❌** | `kamu@gmail.com` |
+| `ADMIN_USERNAME_SEED` | Backend | ❌** | `admin` |
+| `ADMIN_PASSWORD_SEED` | Backend | ⚠️ | *(password kuat)* |
 | `RESEND_API_KEY` | Backend | ❌* | `re_xxxxxxxxxxxx` |
 | `RESEND_FROM_EMAIL` | Backend | ❌* | `noreply@yourdomain.com` |
 | `VITE_API_URL` | Frontend | ✅ | `https://kirodico.vercel.app` |
 
 *❌ = opsional, tapi fitur email tidak akan berfungsi tanpanya.
+
+**❌ = opsional secara teknis (ada default), tapi **sangat disarankan diset** agar password admin bukan nilai default yang mudah ditebak.
 
 ---
 

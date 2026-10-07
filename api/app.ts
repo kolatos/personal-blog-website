@@ -1,10 +1,10 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import authRouter from './routes/auth.routes.js';
-import postRouter from './routes/post.routes.js';
-import commentRouter from './routes/comment.routes.js';
-import userRouter from './routes/user.routes.js';
+import authRouter from '../backend/src/routes/auth.routes.js';
+import postRouter from '../backend/src/routes/post.routes.js';
+import commentRouter from '../backend/src/routes/comment.routes.js';
+import userRouter from '../backend/src/routes/user.routes.js';
 
 /**
  * Express application instance.
