@@ -28,7 +28,6 @@ const adminUser: User = {
 
 // Komponen pembantu untuk mengakses context di dalam tests
 function AuthStateDisplay() {
-  const { user, token, isAuthenticated } = useAuthContext() as ReturnType<typeof useAuthContext> & { isAuthenticated?: boolean };
   const ctx = useAuthContext();
   return (
     <div>

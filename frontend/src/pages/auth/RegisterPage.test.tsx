@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../../contexts/AuthContext';
 import RegisterPage from './RegisterPage';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 
 // Mock modul API auth
 vi.mock('../../api/auth', () => ({
@@ -134,16 +134,7 @@ describe('RegisterPage', () => {
 
   describe('registrasi berhasil', () => {
     it('menampilkan pesan sukses setelah registrasi berhasil', async () => {
-      mockRegister.mockResolvedValueOnce({
-        token: 'new-token',
-        user: {
-          id: 'user-1',
-          username: 'newuser',
-          email: 'new@example.com',
-          role: 'user',
-          joinedAt: '2024-01-01T00:00:00.000Z',
-        },
-      });
+      mockRegister.mockResolvedValueOnce(undefined);
 
       renderRegisterPage();
 
@@ -166,16 +157,7 @@ describe('RegisterPage', () => {
     });
 
     it('mengarahkan ke /login setelah timeout redirect', async () => {
-      mockRegister.mockResolvedValueOnce({
-        token: 'new-token',
-        user: {
-          id: 'user-1',
-          username: 'newuser',
-          email: 'new@example.com',
-          role: 'user',
-          joinedAt: '2024-01-01T00:00:00.000Z',
-        },
-      });
+      mockRegister.mockResolvedValueOnce(undefined);
 
       renderRegisterPage();
 
