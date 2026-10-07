@@ -4,8 +4,7 @@
     "backend": {
       "root": "backend",
       "framework": "express",
-      "entrypoint": "app.ts",
-      "builder": "@vercel/node"
+      "entrypoint": "app.ts"
     },
     "frontend": {
       "root": "frontend",
