@@ -1,26 +1,37 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "Node16",
-    "moduleResolution": "node16",
-    "lib": ["ES2022"],
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "exactOptionalPropertyTypes": false
-  },
-  "include": ["src/**/*", "src/index.ts", "src/app.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+    "compilerOptions":  {
+                            "target":  "ES2022",
+                            "module":  "Node16",
+                            "moduleResolution":  "node16",
+                            "lib":  [
+                                        "ES2022"
+                                    ],
+                            "outDir":  "./dist",
+                            "strict":  true,
+                            "esModuleInterop":  true,
+                            "allowSyntheticDefaultImports":  true,
+                            "skipLibCheck":  true,
+                            "forceConsistentCasingInFileNames":  true,
+                            "resolveJsonModule":  true,
+                            "declaration":  true,
+                            "declarationMap":  true,
+                            "sourceMap":  true,
+                            "noUnusedLocals":  true,
+                            "noUnusedParameters":  true,
+                            "noImplicitReturns":  true,
+                            "noFallthroughCasesInSwitch":  true,
+                            "exactOptionalPropertyTypes":  false
+                        },
+    "include":  [
+                    "src/**/*",
+                    "src/index.ts",
+                    "src/app.ts",
+                    "api/**/*"
+                ],
+    "exclude":  [
+                    "node_modules",
+                    "dist",
+                    "**/*.test.ts",
+                    "**/*.spec.ts"
+                ]
 }
