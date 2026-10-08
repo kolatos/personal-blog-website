@@ -14,35 +14,40 @@ import userRouter from './routes/user.routes.js';
  */
 const app = express();
 
-// ─── Security & body-parsing middleware ──────────────────────────────────────
+// --- Trust proxy --------------------------------------------------------------
+// Diperlukan saat deploy di balik proxy/load balancer (Vercel, Nginx, dll)
+// agar express-rate-limit bisa membaca X-Forwarded-For dengan benar.
+app.set('trust proxy', 1);
+
+// --- Security & body-parsing middleware --------------------------------------
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ─── Health check ─────────────────────────────────────────────────────────────
+// --- Health check -------------------------------------------------------------
 
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ─── API routes ───────────────────────────────────────────────────────────────
+// --- API routes ---------------------------------------------------------------
 
 /**
- * Auth routes — register, login, logout
+ * Auth routes � register, login, logout
  * Requirements: 1.x, 2.x
  */
 app.use('/api/auth', authRouter);
 
 /**
- * Post routes — CRUD for posts, publish/unpublish, search
+ * Post routes � CRUD for posts, publish/unpublish, search
  * Requirements: 3.x, 4.x, 5.x
  */
 app.use('/api/posts', postRouter);
 
 /**
- * Comment routes — nested under posts
+ * Comment routes � nested under posts
  * Express mergeParams is enabled on the comment router so that :postId
  * from this parent path is available inside handlers.
  * Requirements: 6.x
@@ -50,12 +55,12 @@ app.use('/api/posts', postRouter);
 app.use('/api/posts/:postId/comments', commentRouter);
 
 /**
- * User routes — profile management (username/password updates)
+ * User routes � profile management (username/password updates)
  * Requirements: 8.x
  */
 app.use('/api/users', userRouter);
 
-// ─── 404 handler ──────────────────────────────────────────────────────────────
+// --- 404 handler --------------------------------------------------------------
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
@@ -66,7 +71,7 @@ app.use((_req: Request, res: Response) => {
   });
 });
 
-// ─── Global error handler ─────────────────────────────────────────────────────
+// --- Global error handler -----------------------------------------------------
 
 /**
  * Catches errors thrown by route handlers and services.
