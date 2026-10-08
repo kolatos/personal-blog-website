@@ -92,6 +92,9 @@ app.use((_req: Request, res: Response) => {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  // Log the full error for debugging (especially in production/Vercel)
+  console.error('[Global Error Handler]', err);
+
   // Typed guard for errors produced by createError() in the service layer
   const appError = err as {
     status?: number;

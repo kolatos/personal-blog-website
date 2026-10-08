@@ -6,7 +6,7 @@
   "installCommand": "cd backend && npm install --include=dev",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "backend/src/**"
+      "includeFiles": "backend/**"
     }
   },
   "rewrites": [
