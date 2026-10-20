@@ -175,7 +175,7 @@ export default function PostDetailPage() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {publishedDate && (
               <time
-                dateTime={post.publishedAt ?? undefined}
+                dateTime={post.publishedAt ?? ''}
                 className="text-sm text-muted-foreground"
               >
                 {publishedDate}
