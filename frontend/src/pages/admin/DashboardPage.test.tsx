@@ -39,6 +39,7 @@ function makePost(overrides: Partial<Post> = {}): Post {
     publishedAt: null,
     updatedAt: '2024-01-15T10:00:00.000Z',
     commentCount: 0,
+    tags: [],
     ...overrides,
   };
 }

@@ -25,6 +25,7 @@ const samplePost: Post = {
   publishedAt: '2025-01-14T00:00:00.000Z',
   updatedAt: '2025-01-14T00:00:00.000Z',
   commentCount: 3,
+  tags: [],
 };
 
 const emptyResponse: PaginatedResponse<Post> = {

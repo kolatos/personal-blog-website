@@ -14,6 +14,7 @@ const basePost: Post = {
   publishedAt: '2025-01-14T00:00:00.000Z',
   updatedAt: '2025-01-14T00:00:00.000Z',
   commentCount: 5,
+  tags: [],
 };
 
 function renderPostCard(post: Post = basePost) {
