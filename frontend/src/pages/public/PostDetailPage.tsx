@@ -194,7 +194,7 @@ export default function PostDetailPage() {
         </header>
 
         {/* Post body — rendered with KaTeX support */}
-        <MarkdownRenderer content={post.content} />
+        <MarkdownRenderer content={post.content ?? ''} />
       </article>
 
       {/* Divider */}
