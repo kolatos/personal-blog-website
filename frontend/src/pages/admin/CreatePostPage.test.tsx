@@ -6,9 +6,13 @@ import { MemoryRouter } from 'react-router-dom';
 import CreatePostPage from './CreatePostPage';
 import type { Post } from '../../types';
 
-// ── Mock API module ───────────────────────────────────────────────────────────
+// ── Mock API modules ──────────────────────────────────────────────────────────
 vi.mock('../../api/posts', () => ({
   createPost: vi.fn(),
+}));
+
+vi.mock('../../api/tags', () => ({
+  getTags: vi.fn().mockResolvedValue([]),
 }));
 
 // ── Mock react-router-dom navigate ───────────────────────────────────────────
@@ -38,6 +42,7 @@ function makePost(overrides: Partial<Post> = {}): Post {
     publishedAt: null,
     updatedAt: new Date().toISOString(),
     commentCount: 0,
+    tags: [],
     ...overrides,
   };
 }
@@ -127,6 +132,7 @@ describe('CreatePostPage', () => {
       expect(mockCreatePost).toHaveBeenCalledWith({
         title: 'Judul Postingan Baru',
         content: 'Isi konten postingan',
+        tags: [],
       });
     });
   });
@@ -176,5 +182,15 @@ describe('CreatePostPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /publikasikan nanti/i }));
 
     expect(await screen.findByText(/terjadi kesalahan/i)).toBeInTheDocument();
+  });
+
+  it('renders "← Kembali ke Dashboard" button that navigates to /admin', async () => {
+    renderCreatePage();
+
+    const backBtn = screen.getByRole('button', { name: /← kembali ke dashboard/i });
+    expect(backBtn).toBeInTheDocument();
+
+    await userEvent.click(backBtn);
+    expect(mockNavigate).toHaveBeenCalledWith('/admin');
   });
 });

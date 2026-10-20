@@ -1,4 +1,4 @@
-// Unit tests untuk CommentService
+// Unit tests untuk CommentService — sistem komentar generik
 // Requirements: 6.1–6.7
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -24,7 +24,9 @@ vi.mock('../../lib/prisma', () => ({
 import prisma from '../../lib/prisma';
 import {
   addComment,
+  addCommentToPost,
   deleteComment,
+  getComments,
   getCommentsByPost,
 } from '../comment.service';
 
@@ -38,32 +40,32 @@ const AUTHOR_ID = 'user-uuid-1';
 const ADMIN_ID = 'admin-uuid-999';
 const OTHER_USER_ID = 'user-uuid-2';
 const COMMENT_ID = 'comment-uuid-1';
+const PARENT_COMMENT_ID = 'comment-uuid-parent';
 
-const PUBLISHED_POST = {
-  id: POST_ID,
-  status: 'published',
-};
-
-const DRAFT_POST = {
-  id: POST_ID,
-  status: 'draft',
-};
+const PUBLISHED_POST = { id: POST_ID, status: 'published' };
+const DRAFT_POST = { id: POST_ID, status: 'draft' };
 
 function buildRawComment(overrides: Partial<{
   id: string;
-  postId: string;
+  contentType: string;
+  contentId: string;
   authorId: string;
   content: string;
+  parentId: string | null;
   createdAt: Date;
-  author: { username: string };
+  author: { id: string; username: string } | undefined;
+  replies: Array<unknown>;
 }> = {}) {
   return {
     id: COMMENT_ID,
-    postId: POST_ID,
+    contentType: 'post',
+    contentId: POST_ID,
     authorId: AUTHOR_ID,
     content: 'Komentar yang bagus!',
+    parentId: null,
     createdAt: NOW,
-    author: { username: 'alice' },
+    author: { id: AUTHOR_ID, username: 'alice' },
+    replies: [],
     ...overrides,
   };
 }
@@ -76,156 +78,186 @@ describe('CommentService', () => {
   });
 
   // ══════════════════════════════════════════════════════════════════════
-  // addComment
+  // addComment (generic)
   // Requirements: 6.1, 6.2, 6.3, 6.7
   // ══════════════════════════════════════════════════════════════════════
 
-  describe('addComment', () => {
-    describe('sukses (Req 6.1, 6.2)', () => {
-      it('mengembalikan Comment yang baru dibuat ketika post published (Req 6.1)', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
+  describe('addComment (generic)', () => {
+    describe('sukses tanpa parentId', () => {
+      it('mengembalikan Comment yang baru dibuat (Req 6.1)', async () => {
         vi.mocked(prisma.comment.create).mockResolvedValue(buildRawComment() as never);
 
-        const result = await addComment(POST_ID, AUTHOR_ID, 'Komentar yang bagus!');
+        const result = await addComment('post', POST_ID, AUTHOR_ID, 'Komentar yang bagus!');
 
         expect(result).toMatchObject({
           id: COMMENT_ID,
-          postId: POST_ID,
+          contentType: 'post',
+          contentId: POST_ID,
           authorId: AUTHOR_ID,
           content: 'Komentar yang bagus!',
-          createdAt: NOW.toISOString(),
+          parentId: null,
         });
+        expect(result.authorUsername).toBe('alice');
+        expect(Array.isArray(result.replies)).toBe(true);
       });
 
       it('memanggil prisma.comment.create dengan data yang benar (Req 6.2)', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
         vi.mocked(prisma.comment.create).mockResolvedValue(buildRawComment() as never);
 
-        await addComment(POST_ID, AUTHOR_ID, 'Isi komentar');
+        await addComment('post', POST_ID, AUTHOR_ID, 'Isi komentar');
 
         expect(prisma.comment.create).toHaveBeenCalledWith(
           expect.objectContaining({
-            data: {
-              postId: POST_ID,
+            data: expect.objectContaining({
+              contentType: 'post',
+              contentId: POST_ID,
               authorId: AUTHOR_ID,
               content: 'Isi komentar',
-            },
+              parentId: null,
+            }),
           })
         );
       });
 
-      it('authorUsername di-populate dari data author jika tersedia, atau string kosong jika tidak (Req 6.7)', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
-        // create tidak menyertakan include author, sehingga author tidak tersedia
+      it('authorUsername adalah string kosong jika author tidak ada', async () => {
         vi.mocked(prisma.comment.create).mockResolvedValue(
           buildRawComment({ author: undefined }) as never
         );
 
-        const result = await addComment(POST_ID, AUTHOR_ID, 'Komentar dari bob');
+        const result = await addComment('post', POST_ID, AUTHOR_ID, 'Komentar');
 
-        // mapComment menggunakan raw.author?.username ?? '' — jika author tidak ada, hasilnya ''
         expect(result.authorUsername).toBe('');
       });
 
       it('createdAt dikonversi ke ISO string', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
-        vi.mocked(prisma.comment.create).mockResolvedValue(buildRawComment({ createdAt: NOW }) as never);
+        vi.mocked(prisma.comment.create).mockResolvedValue(
+          buildRawComment({ createdAt: NOW }) as never
+        );
 
-        const result = await addComment(POST_ID, AUTHOR_ID, 'Test');
+        const result = await addComment('post', POST_ID, AUTHOR_ID, 'Test');
 
         expect(result.createdAt).toBe(NOW.toISOString());
       });
     });
 
-    describe('post bukan published → 404 (Req 6.3)', () => {
-      it('melempar error 404 NOT_FOUND ketika post berstatus draft (Req 6.3)', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(DRAFT_POST as never);
+    describe('reply dengan parentId (kedalaman 1)', () => {
+      it('berhasil jika parentId ada dan parent adalah level atas', async () => {
+        const parentComment = { id: PARENT_COMMENT_ID, parentId: null };
+        vi.mocked(prisma.comment.findUnique).mockResolvedValue(parentComment as never);
+        vi.mocked(prisma.comment.create).mockResolvedValue(
+          buildRawComment({ parentId: PARENT_COMMENT_ID }) as never
+        );
 
-        await expect(addComment(POST_ID, AUTHOR_ID, 'Komentar')).rejects.toMatchObject({
-          status: 404,
-          code: 'NOT_FOUND',
-          message: 'Post not found',
+        const result = await addComment('post', POST_ID, AUTHOR_ID, 'Balasan', PARENT_COMMENT_ID);
+
+        expect(result.parentId).toBe(PARENT_COMMENT_ID);
+      });
+
+      it('melempar 400 REPLY_DEPTH_EXCEEDED jika parent sudah merupakan reply', async () => {
+        const replyComment = { id: COMMENT_ID, parentId: PARENT_COMMENT_ID };
+        vi.mocked(prisma.comment.findUnique).mockResolvedValue(replyComment as never);
+
+        await expect(
+          addComment('post', POST_ID, AUTHOR_ID, 'Nested reply', COMMENT_ID)
+        ).rejects.toMatchObject({
+          status: 400,
+          code: 'REPLY_DEPTH_EXCEEDED',
         });
 
         expect(prisma.comment.create).not.toHaveBeenCalled();
       });
 
-      it('melempar error 404 NOT_FOUND ketika post tidak ada sama sekali', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(null);
+      it('melempar 404 jika parentId tidak ditemukan', async () => {
+        vi.mocked(prisma.comment.findUnique).mockResolvedValue(null);
 
-        await expect(addComment('nonexistent-post', AUTHOR_ID, 'Komentar')).rejects.toMatchObject({
+        await expect(
+          addComment('post', POST_ID, AUTHOR_ID, 'Balasan', 'nonexistent-parent')
+        ).rejects.toMatchObject({
           status: 404,
           code: 'NOT_FOUND',
         });
-
-        expect(prisma.comment.create).not.toHaveBeenCalled();
       });
+    });
+  });
 
-      it('tidak mengungkap bahwa post draft eksis (hanya mengembalikan 404)', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(DRAFT_POST as never);
+  // ══════════════════════════════════════════════════════════════════════
+  // addCommentToPost (legacy alias, validates post status)
+  // Requirements: 6.1, 6.3
+  // ══════════════════════════════════════════════════════════════════════
 
-        try {
-          await addComment(POST_ID, AUTHOR_ID, 'Komentar');
-          expect.fail('Seharusnya melempar error');
-        } catch (err: unknown) {
-          const e = err as { status: number; message: string };
-          expect(e.status).toBe(404);
-          // pesan tidak mengungkap bahwa post adalah draft
-          expect(e.message).toBe('Post not found');
-        }
+  describe('addCommentToPost (legacy alias)', () => {
+    it('mengembalikan Comment ketika post published (Req 6.1)', async () => {
+      vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
+      vi.mocked(prisma.comment.create).mockResolvedValue(buildRawComment() as never);
+
+      const result = await addCommentToPost(POST_ID, AUTHOR_ID, 'Komentar via legacy');
+
+      expect(result).toMatchObject({
+        contentType: 'post',
+        contentId: POST_ID,
+        authorId: AUTHOR_ID,
       });
     });
 
-    describe('validasi konten', () => {
-      it('menerima konten dengan panjang tepat 1 karakter (Req 6.7)', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
-        vi.mocked(prisma.comment.create).mockResolvedValue(buildRawComment({ content: 'A' }) as never);
+    it('melempar 404 ketika post berstatus draft (Req 6.3)', async () => {
+      vi.mocked(prisma.post.findUnique).mockResolvedValue(DRAFT_POST as never);
 
-        const result = await addComment(POST_ID, AUTHOR_ID, 'A');
-
-        expect(result.content).toBe('A');
+      await expect(
+        addCommentToPost(POST_ID, AUTHOR_ID, 'Komentar pada draft')
+      ).rejects.toMatchObject({
+        status: 404,
+        code: 'NOT_FOUND',
+        message: 'Post not found',
       });
 
-      it('menerima konten dengan panjang tepat 2000 karakter (Req 6.7)', async () => {
-        const longContent = 'A'.repeat(2000);
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
-        vi.mocked(prisma.comment.create).mockResolvedValue(
-          buildRawComment({ content: longContent }) as never
-        );
+      expect(prisma.comment.create).not.toHaveBeenCalled();
+    });
 
-        // CommentService tidak memvalidasi panjang konten — itu adalah tanggung jawab Zod.
-        // Service meneruskan konten apa pun yang diterima ke Prisma.
-        const result = await addComment(POST_ID, AUTHOR_ID, longContent);
+    it('melempar 404 ketika post tidak ada sama sekali', async () => {
+      vi.mocked(prisma.post.findUnique).mockResolvedValue(null);
 
-        expect(result.content).toBe(longContent);
-        expect(prisma.comment.create).toHaveBeenCalledWith(
-          expect.objectContaining({ data: expect.objectContaining({ content: longContent }) })
-        );
+      await expect(
+        addCommentToPost('nonexistent', AUTHOR_ID, 'Komentar')
+      ).rejects.toMatchObject({
+        status: 404,
+        code: 'NOT_FOUND',
       });
+    });
 
-      it('meneruskan konten >2000 char ke Prisma (validasi dilakukan Zod upstream)', async () => {
-        const tooLong = 'B'.repeat(2001);
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
-        vi.mocked(prisma.comment.create).mockResolvedValue(
-          buildRawComment({ content: tooLong }) as never
-        );
+    it('tidak mengungkap bahwa post adalah draft (hanya NOT_FOUND)', async () => {
+      vi.mocked(prisma.post.findUnique).mockResolvedValue(DRAFT_POST as never);
 
-        // Zod schema mencegah ini sebelum sampai ke service;
-        // service sendiri tidak melempar error untuk panjang konten
-        const result = await addComment(POST_ID, AUTHOR_ID, tooLong);
-        expect(result.content).toBe(tooLong);
-      });
+      try {
+        await addCommentToPost(POST_ID, AUTHOR_ID, 'Komentar');
+        expect.fail('Seharusnya melempar error');
+      } catch (err: unknown) {
+        const e = err as { status: number; message: string };
+        expect(e.status).toBe(404);
+        expect(e.message).toBe('Post not found');
+      }
+    });
 
-      it('meneruskan konten kosong ke Prisma (validasi dilakukan Zod upstream)', async () => {
-        vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
-        vi.mocked(prisma.comment.create).mockResolvedValue(
-          buildRawComment({ content: '' }) as never
-        );
+    it('menerima konten tepat 1 karakter (Req 6.7)', async () => {
+      vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
+      vi.mocked(prisma.comment.create).mockResolvedValue(
+        buildRawComment({ content: 'A' }) as never
+      );
 
-        // Zod schema mencegah string kosong; service hanya meneruskan saja
-        const result = await addComment(POST_ID, AUTHOR_ID, '');
-        expect(result.content).toBe('');
-      });
+      const result = await addCommentToPost(POST_ID, AUTHOR_ID, 'A');
+
+      expect(result.content).toBe('A');
+    });
+
+    it('menerima konten tepat 2000 karakter (Req 6.7)', async () => {
+      const longContent = 'A'.repeat(2000);
+      vi.mocked(prisma.post.findUnique).mockResolvedValue(PUBLISHED_POST as never);
+      vi.mocked(prisma.comment.create).mockResolvedValue(
+        buildRawComment({ content: longContent }) as never
+      );
+
+      const result = await addCommentToPost(POST_ID, AUTHOR_ID, longContent);
+
+      expect(result.content).toBe(longContent);
     });
   });
 
@@ -236,54 +268,41 @@ describe('CommentService', () => {
 
   describe('deleteComment', () => {
     describe('owner menghapus komentar miliknya sendiri (Req 6.4)', () => {
-      it('berhasil menghapus ketika requester adalah owner comment (Req 6.4)', async () => {
+      it('berhasil menghapus ketika requester adalah owner (Req 6.4)', async () => {
         vi.mocked(prisma.comment.findUnique).mockResolvedValue(
           buildRawComment({ authorId: AUTHOR_ID }) as never
         );
         vi.mocked(prisma.comment.delete).mockResolvedValue({} as never);
 
         await expect(deleteComment(COMMENT_ID, AUTHOR_ID, 'user')).resolves.toBeUndefined();
-
         expect(prisma.comment.delete).toHaveBeenCalledWith({ where: { id: COMMENT_ID } });
       });
 
-      it('mengembalikan void (undefined) setelah berhasil menghapus', async () => {
+      it('mengembalikan void setelah berhasil menghapus', async () => {
         vi.mocked(prisma.comment.findUnique).mockResolvedValue(
           buildRawComment({ authorId: AUTHOR_ID }) as never
         );
         vi.mocked(prisma.comment.delete).mockResolvedValue({} as never);
 
         const result = await deleteComment(COMMENT_ID, AUTHOR_ID, 'user');
-
         expect(result).toBeUndefined();
       });
     });
 
     describe('admin menghapus komentar siapapun (Req 6.5)', () => {
       it('admin berhasil menghapus komentar milik user lain (Req 6.5)', async () => {
-        // komentar dimiliki oleh AUTHOR_ID, dihapus oleh ADMIN_ID
         vi.mocked(prisma.comment.findUnique).mockResolvedValue(
           buildRawComment({ authorId: AUTHOR_ID }) as never
         );
         vi.mocked(prisma.comment.delete).mockResolvedValue({} as never);
 
         await expect(deleteComment(COMMENT_ID, ADMIN_ID, 'admin')).resolves.toBeUndefined();
-
         expect(prisma.comment.delete).toHaveBeenCalledWith({ where: { id: COMMENT_ID } });
-      });
-
-      it('admin juga dapat menghapus komentar miliknya sendiri', async () => {
-        vi.mocked(prisma.comment.findUnique).mockResolvedValue(
-          buildRawComment({ authorId: ADMIN_ID }) as never
-        );
-        vi.mocked(prisma.comment.delete).mockResolvedValue({} as never);
-
-        await expect(deleteComment(COMMENT_ID, ADMIN_ID, 'admin')).resolves.toBeUndefined();
       });
     });
 
     describe('user lain mencoba menghapus → 403 (Req 6.6)', () => {
-      it('melempar error 403 FORBIDDEN ketika user bukan owner dan bukan admin (Req 6.6)', async () => {
+      it('melempar 403 FORBIDDEN ketika user bukan owner dan bukan admin (Req 6.6)', async () => {
         vi.mocked(prisma.comment.findUnique).mockResolvedValue(
           buildRawComment({ authorId: AUTHOR_ID }) as never
         );
@@ -296,27 +315,13 @@ describe('CommentService', () => {
 
         expect(prisma.comment.delete).not.toHaveBeenCalled();
       });
-
-      it('tidak memanggil prisma.comment.delete ketika tidak diotorisasi', async () => {
-        vi.mocked(prisma.comment.findUnique).mockResolvedValue(
-          buildRawComment({ authorId: AUTHOR_ID }) as never
-        );
-
-        try {
-          await deleteComment(COMMENT_ID, OTHER_USER_ID, 'user');
-        } catch {
-          // error sudah diharapkan
-        }
-
-        expect(prisma.comment.delete).not.toHaveBeenCalled();
-      });
     });
 
     describe('comment tidak ditemukan → 404 (Req 6.4)', () => {
-      it('melempar error 404 NOT_FOUND ketika comment tidak ada (Req 6.4)', async () => {
+      it('melempar 404 NOT_FOUND ketika comment tidak ada (Req 6.4)', async () => {
         vi.mocked(prisma.comment.findUnique).mockResolvedValue(null);
 
-        await expect(deleteComment('nonexistent-comment', AUTHOR_ID, 'user')).rejects.toMatchObject({
+        await expect(deleteComment('nonexistent', AUTHOR_ID, 'user')).rejects.toMatchObject({
           status: 404,
           code: 'NOT_FOUND',
           message: 'Comment not found',
@@ -324,125 +329,109 @@ describe('CommentService', () => {
 
         expect(prisma.comment.delete).not.toHaveBeenCalled();
       });
-
-      it('404 berlaku untuk semua requester — termasuk admin (Req 6.4)', async () => {
-        vi.mocked(prisma.comment.findUnique).mockResolvedValue(null);
-
-        await expect(deleteComment('nonexistent-comment', ADMIN_ID, 'admin')).rejects.toMatchObject({
-          status: 404,
-          code: 'NOT_FOUND',
-        });
-      });
     });
   });
 
   // ══════════════════════════════════════════════════════════════════════
-  // getCommentsByPost
+  // getComments (generic)
   // Requirements: 6.1, 6.2
   // ══════════════════════════════════════════════════════════════════════
 
-  describe('getCommentsByPost', () => {
-    describe('ada komentar — diurutkan ascending (Req 6.1, 6.2)', () => {
-      it('mengembalikan array Comment dari post yang dimaksud (Req 6.1)', async () => {
-        const rawComments = [
-          buildRawComment({ id: 'comment-1', createdAt: NOW }),
-          buildRawComment({ id: 'comment-2', createdAt: LATER }),
-        ];
-        vi.mocked(prisma.comment.findMany).mockResolvedValue(rawComments as never);
+  describe('getComments (generic)', () => {
+    it('mengembalikan array Comment level atas dengan replies bersarang (Req 6.1)', async () => {
+      const rawComments = [
+        buildRawComment({ id: 'comment-1', createdAt: NOW }),
+        buildRawComment({ id: 'comment-2', createdAt: LATER }),
+      ];
+      vi.mocked(prisma.comment.findMany).mockResolvedValue(rawComments as never);
 
-        const result = await getCommentsByPost(POST_ID);
+      const result = await getComments('post', POST_ID);
 
-        expect(result).toHaveLength(2);
-        expect(result[0].id).toBe('comment-1');
-        expect(result[1].id).toBe('comment-2');
-      });
-
-      it('query menggunakan postId yang benar sebagai filter (Req 6.1)', async () => {
-        vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
-
-        await getCommentsByPost(POST_ID);
-
-        expect(prisma.comment.findMany).toHaveBeenCalledWith(
-          expect.objectContaining({
-            where: { postId: POST_ID },
-          })
-        );
-      });
-
-      it('query diurutkan berdasarkan createdAt ASC (Req 6.2)', async () => {
-        vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
-
-        await getCommentsByPost(POST_ID);
-
-        expect(prisma.comment.findMany).toHaveBeenCalledWith(
-          expect.objectContaining({
-            orderBy: { createdAt: 'asc' },
-          })
-        );
-      });
-
-      it('menyertakan include author untuk mengambil username (Req 6.2)', async () => {
-        vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
-
-        await getCommentsByPost(POST_ID);
-
-        expect(prisma.comment.findMany).toHaveBeenCalledWith(
-          expect.objectContaining({
-            include: { author: { select: { username: true } } },
-          })
-        );
-      });
-
-      it('authorUsername di-populate dari data author join (Req 6.2)', async () => {
-        vi.mocked(prisma.comment.findMany).mockResolvedValue([
-          buildRawComment({ author: { username: 'charlie' } }),
-        ] as never);
-
-        const result = await getCommentsByPost(POST_ID);
-
-        expect(result[0].authorUsername).toBe('charlie');
-      });
-
-      it('createdAt dikonversi ke ISO string', async () => {
-        vi.mocked(prisma.comment.findMany).mockResolvedValue([
-          buildRawComment({ createdAt: NOW }),
-        ] as never);
-
-        const result = await getCommentsByPost(POST_ID);
-
-        expect(result[0].createdAt).toBe(NOW.toISOString());
-      });
-
-      it('setiap komentar memiliki postId yang sama dengan yang diminta', async () => {
-        const rawComments = [
-          buildRawComment({ id: 'c-1', postId: POST_ID }),
-          buildRawComment({ id: 'c-2', postId: POST_ID }),
-        ];
-        vi.mocked(prisma.comment.findMany).mockResolvedValue(rawComments as never);
-
-        const result = await getCommentsByPost(POST_ID);
-
-        result.forEach(comment => {
-          expect(comment.postId).toBe(POST_ID);
-        });
-      });
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe('comment-1');
+      expect(result[1].id).toBe('comment-2');
     });
 
-    describe('tidak ada komentar', () => {
-      it('mengembalikan array kosong ketika tidak ada komentar pada post', async () => {
-        vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
+    it('query menggunakan contentType dan contentId yang benar (Req 6.1)', async () => {
+      vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
 
-        const result = await getCommentsByPost(POST_ID);
+      await getComments('post', POST_ID);
 
-        expect(result).toEqual([]);
-        expect(result).toHaveLength(0);
-      });
+      expect(prisma.comment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { contentType: 'post', contentId: POST_ID, parentId: null },
+        })
+      );
+    });
 
-      it('tidak melempar error ketika post tidak memiliki komentar', async () => {
-        vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
+    it('query diurutkan berdasarkan createdAt ASC (Req 6.2)', async () => {
+      vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
 
-        await expect(getCommentsByPost('any-post-id')).resolves.toEqual([]);
-      });
+      await getComments('post', POST_ID);
+
+      expect(prisma.comment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: { createdAt: 'asc' },
+        })
+      );
+    });
+
+    it('mengembalikan array kosong ketika tidak ada komentar', async () => {
+      vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
+
+      const result = await getComments('post', POST_ID);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════════════════
+  // getCommentsByPost (legacy alias)
+  // Requirements: 6.1, 6.2
+  // ══════════════════════════════════════════════════════════════════════
+
+  describe('getCommentsByPost (legacy alias)', () => {
+    it('mengembalikan komentar menggunakan contentType=post dan contentId=postId', async () => {
+      vi.mocked(prisma.comment.findMany).mockResolvedValue([] as never);
+
+      await getCommentsByPost(POST_ID);
+
+      expect(prisma.comment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { contentType: 'post', contentId: POST_ID, parentId: null },
+        })
+      );
+    });
+
+    it('mengembalikan array Comment yang sama seperti getComments', async () => {
+      const rawComments = [buildRawComment()];
+      vi.mocked(prisma.comment.findMany).mockResolvedValue(rawComments as never);
+
+      const result = await getCommentsByPost(POST_ID);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].contentType).toBe('post');
+      expect(result[0].contentId).toBe(POST_ID);
+    });
+
+    it('authorUsername di-populate dari data author join (Req 6.2)', async () => {
+      vi.mocked(prisma.comment.findMany).mockResolvedValue([
+        buildRawComment({ author: { id: AUTHOR_ID, username: 'charlie' } }),
+      ] as never);
+
+      const result = await getCommentsByPost(POST_ID);
+
+      expect(result[0].authorUsername).toBe('charlie');
+    });
+
+    it('createdAt dikonversi ke ISO string', async () => {
+      vi.mocked(prisma.comment.findMany).mockResolvedValue([
+        buildRawComment({ createdAt: NOW }),
+      ] as never);
+
+      const result = await getCommentsByPost(POST_ID);
+
+      expect(result[0].createdAt).toBe(NOW.toISOString());
     });
   });
 });

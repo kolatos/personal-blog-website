@@ -1,10 +1,10 @@
-# Implementation Plan
+﻿# Implementation Plan
 
 ## Overview
 
-7 task: migrasi rute blog (Task 13), backend About (Task 14), frontend About publik + admin (Task 15), backend Projects (Task 16), frontend Projects publik + admin (Task 17), seksi Fun backend + frontend terpadu (Task 18), dan Landing Page + pembaruan dashboard admin (Task 19).
+8 task: migrasi rute blog (Task 13), backend About (Task 14), frontend About publik + admin (Task 15), backend Projects (Task 16), frontend Projects publik + admin (Task 17), seksi Fun backend + frontend terpadu (Task 18), Landing Page + pembaruan dashboard admin (Task 19), dan tombol kembali (Task 20).
 
-Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 12) untuk keterlacakan antar stage.
+Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlacakan antar stage.
 
 **Prerequisites**: Semua task Stage 1 selesai. Sistem komentar generik, MarkdownRenderer, shadcn/ui, dan infrastruktur tag sudah tersedia.
 
@@ -15,7 +15,8 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 12) untuk keterlac
   "waves": [
     { "id": 0, "tasks": ["13", "14", "16", "18"] },
     { "id": 1, "tasks": ["15", "17"] },
-    { "id": 2, "tasks": ["19"] }
+    { "id": 2, "tasks": ["19"] },
+    { "id": 3, "tasks": ["20"] }
   ]
 }
 ```
@@ -26,7 +27,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 12) untuk keterlac
   - Rename `frontend/src/pages/public/HomePage.tsx` menjadi `BlogPage.tsx`; perbarui nama komponen di dalamnya
   - Update `App.tsx`: ubah rute `/` dari `<BlogPage>` menjadi `<LandingPage>` (buat stub `LandingPage.tsx` yang mereturn `<div>Landing — coming soon</div>` untuk sekarang); tambahkan rute `/blog` → `<BlogPage>`
   - Update `Navbar`: ubah tautan "Beranda" / "Blog" untuk menunjuk ke `/blog`
-  - Update tautan "← Kembali ke Beranda" di `PostDetailPage`: ubah href dari `/` menjadi `/blog`
+  - Update tautan "? Kembali ke Beranda" di `PostDetailPage`: ubah href dari `/` menjadi `/blog`
   - Update redirect setelah login untuk `role === 'user'` di `AuthContext`: redirect ke `/blog`
   - Component test: `Navbar` merender tautan "Blog" dengan href `/blog`
   - Verifikasi tes `PostDetailPage` yang ada lulus tanpa modifikasi (routing berbasis slug tidak berubah)
@@ -129,7 +130,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 12) untuk keterlac
     - Tambahkan model `FunPost` dan `FunTag` ke `backend/prisma/schema.prisma`; tambahkan juga field back-relation `FunTag` ke model `Tag` yang ada
     - Jalankan `npx prisma migrate dev --name add_fun_posts`; jalankan `npx prisma generate`
     - Buat `schemas/fun.schema.ts` — type harus salah satu dari 6 nilai valid
-    - Buat `services/fun.service.ts`: pola CRUD + publish/unpublish + slug yang sama seperti `project.service.ts` menggunakan `slugUtils`; `getFunPosts(page, type?, tag?)` memfilter berdasarkan keduanya; excerpt di-generate otomatis sebagai `content.slice(0, 500)` jika tidak disediakan
+    - Buat `services/fun.service.ts`: pola CRUD + publish/unpublish + slug yang sama seperti `project.service.ts` menggunakan `slugUtils`; `getFunPosts(page, type←, tag←)` memfilter berdasarkan keduanya; excerpt di-generate otomatis sebagai `content.slice(0, 500)` jika tidak disediakan
     - Buat `controllers/fun.controller.ts` dan `routes/fun.routes.ts` di-mount di `/api/fun`
     - Update `GET /api/admin/stats` untuk menyertakan `totalFunPosts`
     - Mount `/api/fun` di `app.ts`
@@ -187,3 +188,20 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 12) untuk keterlac
 - Task 18 juga menambahkan back-relation FunTag ke model `Tag` di `schema.prisma` (sama seperti Task 16 menambahkan back-relation ProjectTag).
 - Stage 2 tidak memperkenalkan perubahan pada skema komentar — sistem komentar generik dari Stage 1 digunakan langsung via `contentType` dan `contentId`.
 - `@dnd-kit/core` dan `@dnd-kit/sortable` hanya diinstal di `frontend/` — tidak ada dependensi backend baru.
+
+
+- [ ] 20. Tombol kembali (back button) � Stage 2 pages
+  - **`PostDetailPage`**: update tombol kembali dari Stage 1 � ubah target dari `/` menjadi `/blog` (setelah migrasi rute Task 13 selesai)
+  - **`ProjectDetailPage`**: tambahkan tombol `<Button variant="ghost">← Kembali ke Projects</Button>` di atas judul yang menavigasi ke `/projects`
+  - **`FunDetailPage`**: tambahkan tombol `<Button variant="ghost">← Kembali ke Fun</Button>` di atas judul yang menavigasi ke `/fun`
+  - **`AboutPage`**: tambahkan tombol `<Button variant="ghost">← Kembali</Button>` di bagian atas yang menavigasi ke `/` (Landing Page)
+  - **Subhalaman admin baru**: tambahkan tombol kembali yang relevan:
+    - `ProjectEditorPage`: `? Kembali ke Projects` ? navigasi ke `/admin/projects`
+    - `FunEditorPage`: `? Kembali ke Fun` ? navigasi ke `/admin/fun`
+    - `AboutAdminPage`: tidak perlu tombol kembali (ini halaman admin tingkat atas, sudah ada di sidebar)
+  - Semua tombol menggunakan shadcn `Button variant="ghost"` dengan ikon panah kiri (←), ditempatkan sebelum `<h1>` halaman
+  - Component test: `ProjectDetailPage` merender tombol kembali dengan href `/projects`
+  - Component test: `FunDetailPage` merender tombol kembali dengan href `/fun`
+  - Component test: `ProjectEditorPage` merender tombol "← Kembali ke Projects" dengan navigasi ke `/admin/projects`
+  - **Files:** `frontend/src/pages/public/PostDetailPage.tsx`, `frontend/src/pages/public/ProjectDetailPage.tsx`, `frontend/src/pages/public/FunDetailPage.tsx`, `frontend/src/pages/public/AboutPage.tsx`, `frontend/src/pages/admin/ProjectEditorPage.tsx`, `frontend/src/pages/admin/FunEditorPage.tsx`
+  - **Requires:** 13, 17, 18

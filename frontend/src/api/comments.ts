@@ -2,29 +2,34 @@ import type { Comment } from '../types';
 import apiClient from './client';
 
 export interface AddCommentPayload {
+  contentType: string;
+  contentId: string;
   content: string;
+  parentId?: string;
 }
 
 /**
- * Fetch all comments for a post, ordered by createdAt ASC.
- * Backend returns { data: Comment[] }.
+ * Fetch all top-level comments (with nested replies) for a content item.
+ * Uses the generic endpoint: GET /api/comments?contentType=&contentId=
  */
-export async function getComments(postId: string): Promise<Comment[]> {
-  const { data: body } = await apiClient.get<{ data: Comment[] }>(`/api/posts/${postId}/comments`);
+export async function getComments(
+  contentType: string,
+  contentId: string,
+): Promise<Comment[]> {
+  const { data: body } = await apiClient.get<{ data: Comment[] }>('/api/comments', {
+    params: { contentType, contentId },
+  });
   return body.data;
 }
 
 /**
- * Add a comment to a published post.
- * Requires authentication (registered user).
- * Backend returns { data: Comment }.
+ * Add a comment or reply.
+ * POST /api/comments
+ * body: { contentType, contentId, content, parentId? }
  */
-export async function addComment(
-  postId: string,
-  payload: AddCommentPayload,
-): Promise<Comment> {
+export async function addComment(payload: AddCommentPayload): Promise<Comment> {
   const { data: body } = await apiClient.post<{ data: Comment }>(
-    `/api/posts/${postId}/comments`,
+    '/api/comments',
     payload,
   );
   return body.data;
@@ -33,10 +38,8 @@ export async function addComment(
 /**
  * Delete a comment by ID.
  * Allowed for the comment owner or an admin.
+ * DELETE /api/comments/:id
  */
-export async function deleteComment(
-  postId: string,
-  commentId: string,
-): Promise<void> {
-  await apiClient.delete(`/api/posts/${postId}/comments/${commentId}`);
+export async function deleteComment(commentId: string): Promise<void> {
+  await apiClient.delete(`/api/comments/${commentId}`);
 }

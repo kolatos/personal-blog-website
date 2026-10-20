@@ -21,6 +21,18 @@ vi.mock('../../lib/prisma', () => ({
       delete: vi.fn(),
       count: vi.fn(),
     },
+    comment: {
+      count: vi.fn().mockResolvedValue(0),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      groupBy: vi.fn().mockResolvedValue([]),
+    },
+    tag: {
+      upsert: vi.fn(),
+      findMany: vi.fn(),
+    },
+    postTag: {
+      findMany: vi.fn(),
+    },
     $queryRaw: queryRawMock,
   },
 }));
@@ -59,7 +71,6 @@ function buildPost(overrides: Partial<{
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  _count: { comments: number };
 }> = {}) {
   return {
     id: 'post-uuid-1',
@@ -70,7 +81,6 @@ function buildPost(overrides: Partial<{
     publishedAt: null,
     createdAt: NOW,
     updatedAt: NOW,
-    _count: { comments: 0 },
     ...overrides,
   };
 }
@@ -81,6 +91,12 @@ describe('PostService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryRawMock.mockReset();
+    // Default mock for postTag.findMany — returns empty array unless overridden
+    vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
+    // Default comment count mocks — return 0 unless overridden
+    vi.mocked(prisma.comment.count).mockResolvedValue(0);
+    vi.mocked(prisma.comment.groupBy).mockResolvedValue([] as never);
+    vi.mocked(prisma.comment.deleteMany).mockResolvedValue({ count: 0 });
   });
 
   // ══════════════════════════════════════════════════════════════════════
@@ -257,9 +273,7 @@ describe('PostService', () => {
       it('mengembalikan commentCount 0 untuk post baru (Req 3.7)', async () => {
         vi.mocked(prisma.post.findUnique).mockResolvedValue(null);
         vi.mocked(prisma.post.findMany).mockResolvedValue([]);
-        vi.mocked(prisma.post.create).mockResolvedValue(buildPost({
-          _count: { comments: 0 },
-        }) as never);
+        vi.mocked(prisma.post.create).mockResolvedValue(buildPost() as never);
 
         const result = await createPost({ title: 'Hello World', content: 'Isi' });
 
@@ -675,11 +689,14 @@ describe('PostService', () => {
       const postWithComments = buildPost({
         status: 'published',
         publishedAt: PUBLISHED_AT,
-        _count: { comments: 5 },
       });
 
       vi.mocked(prisma.post.findMany).mockResolvedValue([postWithComments] as never);
       vi.mocked(prisma.post.count).mockResolvedValue(1 as never);
+      // groupBy mengembalikan 5 komentar untuk post ini
+      vi.mocked(prisma.comment.groupBy).mockResolvedValue([
+        { contentId: postWithComments.id, _count: { id: 5 } },
+      ] as never);
 
       const result = await getPublishedPosts(1);
 

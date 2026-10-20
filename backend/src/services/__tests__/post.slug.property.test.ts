@@ -13,6 +13,14 @@ vi.mock('../../lib/prisma', () => ({
       findMany: vi.fn(),
       update: vi.fn(),
     },
+    comment: {
+      count: vi.fn().mockResolvedValue(0),
+      groupBy: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    postTag: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
 }));
 
@@ -241,6 +249,9 @@ describe('Property 1: Slug uniqueness after generation', () => {
 describe('Property 2: Slug regeneration on title change', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.comment.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.comment.groupBy).mockResolvedValue([] as never);
+    vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
   });
 
   /**
@@ -437,6 +448,9 @@ describe('Property 2: Slug regeneration on title change', () => {
 describe('Property 3: Published post auto-reverts to Draft on edit', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.comment.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.comment.groupBy).mockResolvedValue([] as never);
+    vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
   });
 
   /**

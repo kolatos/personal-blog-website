@@ -1,3 +1,9 @@
+export interface TagSummary {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Post {
   id: string;
   title: string;
@@ -9,14 +15,20 @@ export interface Post {
   publishedAt: string | null;
   updatedAt: string;
   commentCount: number;
+  tags: TagSummary[];
 }
+
+export type PostSummary = Post;
 
 export interface Comment {
   id: string;
-  postId: string;
+  contentType: string;
+  contentId: string;
   authorId: string;
   authorUsername: string;
   content: string;
+  parentId: string | null;
+  replies: Comment[];
   createdAt: string;
 }
 

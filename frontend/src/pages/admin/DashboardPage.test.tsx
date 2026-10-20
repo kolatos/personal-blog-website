@@ -69,7 +69,6 @@ function renderDashboard() {
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   // ── Loading state ────────────────────────────────────────────────────────
@@ -117,7 +116,7 @@ describe('DashboardPage', () => {
 
   // ── Publish action ────────────────────────────────────────────────────────
 
-  it('calls publishPost API and refetches when publish button clicked', async () => {
+  it('calls publishPost API and refetches when publish button clicked and confirmed', async () => {
     const post = makePost({ status: 'draft' });
     mockGetAllPosts.mockResolvedValue(pageWithPosts([post]));
     mockPublishPost.mockResolvedValue({ ...post, status: 'published', publishedAt: '2024-01-16T00:00:00.000Z' });
@@ -126,6 +125,10 @@ describe('DashboardPage', () => {
 
     const publishBtn = await screen.findByRole('button', { name: /publikasikan postingan/i });
     await userEvent.click(publishBtn);
+
+    // AlertDialog should appear — click the confirm action button
+    const confirmBtn = await screen.findByRole('button', { name: /publikasikan/i });
+    await userEvent.click(confirmBtn);
 
     await waitFor(() => {
       expect(mockPublishPost).toHaveBeenCalledWith(post.id);
@@ -137,7 +140,6 @@ describe('DashboardPage', () => {
   });
 
   it('shows confirmation dialog before publishing', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const post = makePost({ status: 'draft' });
     mockGetAllPosts.mockResolvedValue(pageWithPosts([post]));
 
@@ -146,13 +148,19 @@ describe('DashboardPage', () => {
     const publishBtn = await screen.findByRole('button', { name: /publikasikan postingan/i });
     await userEvent.click(publishBtn);
 
-    expect(confirmSpy).toHaveBeenCalled();
+    // AlertDialog should be open with title visible
+    expect(await screen.findByText(/publikasikan postingan/i)).toBeInTheDocument();
+
+    // Cancel the dialog
+    const cancelBtn = screen.getByRole('button', { name: /batal/i });
+    await userEvent.click(cancelBtn);
+
     expect(mockPublishPost).not.toHaveBeenCalled();
   });
 
   // ── Unpublish action ──────────────────────────────────────────────────────
 
-  it('calls unpublishPost API and refetches when unpublish button clicked', async () => {
+  it('calls unpublishPost API and refetches when unpublish button clicked and confirmed', async () => {
     const post = makePost({ status: 'published', publishedAt: '2024-01-10T00:00:00.000Z' });
     mockGetAllPosts.mockResolvedValue(pageWithPosts([post]));
     mockUnpublishPost.mockResolvedValue({ ...post, status: 'draft', publishedAt: null });
@@ -161,6 +169,10 @@ describe('DashboardPage', () => {
 
     const unpublishBtn = await screen.findByRole('button', { name: /batalkan publikasi postingan/i });
     await userEvent.click(unpublishBtn);
+
+    // AlertDialog should appear — click the confirm action button
+    const confirmBtn = await screen.findByRole('button', { name: /batalkan publikasi/i });
+    await userEvent.click(confirmBtn);
 
     await waitFor(() => {
       expect(mockUnpublishPost).toHaveBeenCalledWith(post.id);
@@ -171,7 +183,6 @@ describe('DashboardPage', () => {
   });
 
   it('does not call unpublishPost when confirmation is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     const post = makePost({ status: 'published', publishedAt: '2024-01-10T00:00:00.000Z' });
     mockGetAllPosts.mockResolvedValue(pageWithPosts([post]));
 
@@ -180,13 +191,16 @@ describe('DashboardPage', () => {
     const unpublishBtn = await screen.findByRole('button', { name: /batalkan publikasi postingan/i });
     await userEvent.click(unpublishBtn);
 
+    // AlertDialog should appear — click cancel (the dialog cancel button, not the table action button)
+    const cancelBtn = await screen.findByRole('button', { name: /^batal$/i });
+    await userEvent.click(cancelBtn);
+
     expect(mockUnpublishPost).not.toHaveBeenCalled();
   });
 
   // ── Delete action ─────────────────────────────────────────────────────────
 
   it('shows confirmation dialog before deleting', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const post = makePost();
     mockGetAllPosts.mockResolvedValue(pageWithPosts([post]));
 
@@ -195,12 +209,17 @@ describe('DashboardPage', () => {
     const deleteBtn = await screen.findByRole('button', { name: /hapus postingan/i });
     await userEvent.click(deleteBtn);
 
-    expect(confirmSpy).toHaveBeenCalled();
+    // AlertDialog should be open with delete title
+    expect(await screen.findByText(/hapus postingan\?/i)).toBeInTheDocument();
+
+    // Cancel the dialog
+    const cancelBtn = screen.getByRole('button', { name: /batal/i });
+    await userEvent.click(cancelBtn);
+
     expect(mockDeletePost).not.toHaveBeenCalled();
   });
 
   it('calls deletePost API and refetches after delete confirmed', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const post = makePost();
     mockGetAllPosts.mockResolvedValue(pageWithPosts([post]));
     mockDeletePost.mockResolvedValue(undefined);
@@ -209,6 +228,10 @@ describe('DashboardPage', () => {
 
     const deleteBtn = await screen.findByRole('button', { name: /hapus postingan/i });
     await userEvent.click(deleteBtn);
+
+    // AlertDialog should appear — click the destructive confirm button
+    const confirmBtn = await screen.findByRole('button', { name: /^hapus$/i });
+    await userEvent.click(confirmBtn);
 
     await waitFor(() => {
       expect(mockDeletePost).toHaveBeenCalledWith(post.id);
@@ -230,6 +253,10 @@ describe('DashboardPage', () => {
     const publishBtn = await screen.findByRole('button', { name: /publikasikan postingan/i });
     await userEvent.click(publishBtn);
 
+    // Confirm the dialog
+    const confirmBtn = await screen.findByRole('button', { name: /publikasikan/i });
+    await userEvent.click(confirmBtn);
+
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/gagal mempublikasikan/i)).toBeInTheDocument();
   });
@@ -244,12 +271,15 @@ describe('DashboardPage', () => {
     const unpublishBtn = await screen.findByRole('button', { name: /batalkan publikasi postingan/i });
     await userEvent.click(unpublishBtn);
 
+    // Confirm the dialog
+    const confirmBtn = await screen.findByRole('button', { name: /batalkan publikasi/i });
+    await userEvent.click(confirmBtn);
+
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/gagal membatalkan publikasi/i)).toBeInTheDocument();
   });
 
   it('shows error message when deletePost API call fails', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const post = makePost();
     mockGetAllPosts.mockResolvedValue(pageWithPosts([post]));
     mockDeletePost.mockRejectedValue(new Error('Server error'));
@@ -258,6 +288,10 @@ describe('DashboardPage', () => {
 
     const deleteBtn = await screen.findByRole('button', { name: /hapus postingan/i });
     await userEvent.click(deleteBtn);
+
+    // Confirm the delete dialog
+    const confirmBtn = await screen.findByRole('button', { name: /^hapus$/i });
+    await userEvent.click(confirmBtn);
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/gagal menghapus/i)).toBeInTheDocument();

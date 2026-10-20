@@ -17,8 +17,8 @@ vi.mock('../../lib/prisma', () => ({
 }));
 
 import prisma from '../../lib/prisma';
-import { addComment } from '../comment.service';
-import { CreateCommentSchema } from '../../schemas/comment.schema';
+import { addCommentToPost } from '../comment.service';
+import { CreateCommentLegacySchema } from '../../schemas/comment.schema';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -34,11 +34,14 @@ function buildPublishedPost(postId: string) {
 function buildCreatedComment(postId: string, authorId: string, content: string) {
   return {
     id: 'comment-id-1',
-    postId,
+    contentType: 'post',
+    contentId: postId,
     authorId,
     content,
+    parentId: null,
     createdAt: new Date(),
-    author: { username: 'testuser' },
+    author: { id: authorId, username: 'testuser' },
+    replies: [],
   };
 }
 
@@ -107,7 +110,7 @@ describe('Property 8: Comment content validation', () => {
     it('always accepts content within 1–2000 characters', () => {
       fc.assert(
         fc.property(validContentArb, (content) => {
-          const result = CreateCommentSchema.safeParse({ content });
+          const result = CreateCommentLegacySchema.safeParse({ content });
           expect(result.success).toBe(true);
         }),
         { numRuns: 100 },
@@ -125,7 +128,7 @@ describe('Property 8: Comment content validation', () => {
      * error that indicates the min-length boundary was violated.
      */
     it('always rejects empty string with a validation error', () => {
-      const result = CreateCommentSchema.safeParse({ content: '' });
+      const result = CreateCommentLegacySchema.safeParse({ content: '' });
       expect(result.success).toBe(false);
       if (!result.success) {
         const messages = result.error.errors.map((e) => e.message);
@@ -147,7 +150,7 @@ describe('Property 8: Comment content validation', () => {
     it('always rejects content longer than 2000 characters', () => {
       fc.assert(
         fc.property(tooLongContentArb, (content) => {
-          const result = CreateCommentSchema.safeParse({ content });
+          const result = CreateCommentLegacySchema.safeParse({ content });
           expect(result.success).toBe(false);
           if (!result.success) {
             const messages = result.error.errors.map((e) => e.message);
@@ -174,7 +177,7 @@ describe('Property 8: Comment content validation', () => {
     it('always rejects whitespace-only content with a validation error', () => {
       fc.assert(
         fc.property(whitespaceOnlyContentArb, (content) => {
-          const result = CreateCommentSchema.safeParse({ content });
+          const result = CreateCommentLegacySchema.safeParse({ content });
           expect(result.success).toBe(false);
         }),
         { numRuns: 100 },
@@ -216,7 +219,7 @@ describe('Property 8: Comment content validation', () => {
             content.length <= 2000 &&
             content.trim().length > 0;
 
-          const result = CreateCommentSchema.safeParse({ content });
+          const result = CreateCommentLegacySchema.safeParse({ content });
           expect(result.success).toBe(isValid);
         }),
         { numRuns: 100 },
@@ -246,19 +249,19 @@ describe('Property 8: Comment content validation', () => {
             buildCreatedComment(postId, authorId, content) as never,
           );
 
-          const result = await addComment(postId, authorId, content);
+          const result = await addCommentToPost(postId, authorId, content);
 
           // comment.create must have been called with the provided content
           expect(prisma.comment.create).toHaveBeenCalledOnce();
           expect(prisma.comment.create).toHaveBeenCalledWith(
             expect.objectContaining({
-              data: { postId, authorId, content },
+              data: expect.objectContaining({ contentType: 'post', contentId: postId, authorId, content }),
             })
           );
 
           // The returned comment must carry the same content
           expect(result.content).toBe(content);
-          expect(result.postId).toBe(postId);
+          expect(result.contentId).toBe(postId);
           expect(result.authorId).toBe(authorId);
         }),
         { numRuns: 100 },
@@ -276,22 +279,22 @@ describe('Property 8: Comment content validation', () => {
      * characters MUST be accepted; 0 and 2001 MUST be rejected.
      */
     it('accepts exactly 1 character', () => {
-      const result = CreateCommentSchema.safeParse({ content: 'a' });
+      const result = CreateCommentLegacySchema.safeParse({ content: 'a' });
       expect(result.success).toBe(true);
     });
 
     it('accepts exactly 2000 characters', () => {
-      const result = CreateCommentSchema.safeParse({ content: 'a'.repeat(2000) });
+      const result = CreateCommentLegacySchema.safeParse({ content: 'a'.repeat(2000) });
       expect(result.success).toBe(true);
     });
 
     it('rejects 0 characters (empty string)', () => {
-      const result = CreateCommentSchema.safeParse({ content: '' });
+      const result = CreateCommentLegacySchema.safeParse({ content: '' });
       expect(result.success).toBe(false);
     });
 
     it('rejects exactly 2001 characters', () => {
-      const result = CreateCommentSchema.safeParse({ content: 'a'.repeat(2001) });
+      const result = CreateCommentLegacySchema.safeParse({ content: 'a'.repeat(2001) });
       expect(result.success).toBe(false);
     });
   });

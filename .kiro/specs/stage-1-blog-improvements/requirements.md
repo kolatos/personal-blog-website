@@ -1,4 +1,4 @@
-# Requirements Document
+﻿# Requirements Document
 
 ## Introduction
 
@@ -178,3 +178,16 @@ Stage 1 meningkatkan bagian blog yang sudah ada dan menstandarisasi antarmuka pe
 16. WHEN tombol Insert image URL diklik, THE System SHALL menyisipkan `![alt](url)` di posisi kursor; IF ada teks terseleksi THEN teks tersebut digunakan sebagai alt text dan kursor ditempatkan di posisi "url".
 17. WHEN tombol Undo diklik, THE System SHALL membatalkan aksi toolbar terakhir dan memulihkan konten sebelumnya. WHEN tombol Redo diklik, THE System SHALL mengulangi aksi yang telah dibatalkan.
 18. THE toolbar SHALL diimplementasikan sebagai komponen React murni (`MarkdownToolbar`) yang beroperasi pada nilai string textarea melalui state React, tanpa bergantung pada library eksternal tambahan di luar dependensi yang sudah ada.
+
+### Requirement 9: Tombol Kembali (Back Button)
+
+**User Story:** Sebagai Pengguna, saya ingin tombol kembali yang jelas di setiap subhalaman, sehingga saya dapat dengan mudah kembali ke halaman sebelumnya tanpa bergantung pada tombol back browser.
+
+#### Acceptance Criteria
+
+1. THE `PostDetailPage` di `/posts/:slug` SHALL menampilkan tombol "← Kembali ke Blog" di bagian atas konten yang menavigasi ke `/` (atau ke `/blog` setelah migrasi rute di Stage 2).
+2. THE halaman `LoginPage` di `/login` SHALL menampilkan tombol "← Kembali" di bagian atas form yang menavigasi ke halaman sebelumnya menggunakan `useNavigate(-1)`, atau ke `/` jika tidak ada riwayat navigasi (window.history.length <= 1).
+3. THE halaman `RegisterPage` di `/register` SHALL menampilkan tombol "← Kembali" di bagian atas form yang menavigasi ke halaman sebelumnya menggunakan `useNavigate(-1)`, atau ke `/` jika tidak ada riwayat navigasi.
+4. THE setiap subhalaman admin SHALL menampilkan tombol "← Kembali ke Dashboard" di bagian atas yang menavigasi ke `/admin`, mencakup: CreatePostPage, EditPostPage, UsersAdminPage, CommentsAdminPage.
+5. THE tombol kembali SHALL menggunakan shadcn `Button` dengan variant `ghost` dan ikon panah kiri (←) di depan teks label.
+6. THE tombol kembali SHALL ditempatkan secara konsisten di bagian kiri atas konten halaman, sebelum heading utama halaman.

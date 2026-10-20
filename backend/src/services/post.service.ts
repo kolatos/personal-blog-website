@@ -1,12 +1,15 @@
 import slugify from 'slugify';
 import { marked } from 'marked';
 import prisma from '../lib/prisma.js';
+import { mailService } from './mail.service.js';
+import { getAllSubscriberEmails } from './subscription.service.js';
 import type {
   CreatePostDto,
   UpdatePostDto,
   PaginatedResponse,
   Post,
   PostSummary,
+  TagDto,
 } from '../types/index.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -40,21 +43,93 @@ async function renderMarkdown(content: string): Promise<string> {
   return await marked(content);
 }
 
+// ─── Tag helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Normalizes tag name to lowercase.
+ * Requirements: 2.7
+ */
+export function normalizeTagName(name: string): string {
+  return name.toLowerCase();
+}
+
+/**
+ * Upserts tags by normalized name and connects them to a post.
+ * Creates tags that don't exist yet (idempotent — safe to call multiple times
+ * with the same name).
+ *
+ * Requirements: 2.2, 2.7 (Property 1: Tag Upsert Idempotency)
+ */
+export async function upsertTags(tagNames: string[]): Promise<{ id: string }[]> {
+  const normalized = tagNames.map(normalizeTagName).filter(Boolean);
+  const unique = [...new Set(normalized)];
+
+  const tags = await Promise.all(
+    unique.map((name) => {
+      const slug = slugify(name, { lower: true, strict: true, trim: true });
+      return prisma.tag.upsert({
+        where: { name },
+        update: {},
+        create: { name, slug },
+        select: { id: true },
+      });
+    })
+  );
+
+  return tags;
+}
+
+// ─── Raw post shape expected by mapPost / mapPostSummary ────────────────────
+
+type RawPost = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  status: string;
+  publishedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  commentCount?: number;
+  tags?: { tag: { name: string } }[];
+};
+
+// ─── Comment count helpers ─────────────────────────────────────────────────
+
+/**
+ * Returns the number of comments for a single post.
+ */
+async function getCommentCountForPost(postId: string): Promise<number> {
+  return prisma.comment.count({
+    where: { contentType: 'post', contentId: postId },
+  });
+}
+
+/**
+ * Returns a Map of postId → commentCount for a list of post IDs.
+ * Uses a single aggregation query to avoid N+1.
+ */
+async function getCommentCountsForPosts(
+  postIds: string[]
+): Promise<Map<string, number>> {
+  if (postIds.length === 0) return new Map();
+
+  const counts = await prisma.comment.groupBy({
+    by: ['contentId'],
+    where: { contentType: 'post', contentId: { in: postIds } },
+    _count: { id: true },
+  });
+
+  const map = new Map<string, number>();
+  for (const row of counts) {
+    map.set(row.contentId, row._count.id);
+  }
+  return map;
+}
+
 // ─── Map Prisma Post → Post interface ───────────────────────────────────────
 
-async function mapPost(
-  raw: {
-    id: string;
-    title: string;
-    slug: string;
-    content: string;
-    status: string;
-    publishedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-    _count?: { comments: number };
-  }
-): Promise<Post> {
+async function mapPost(raw: RawPost): Promise<Post> {
   const contentHtml = await renderMarkdown(raw.content);
   return {
     id: raw.id,
@@ -65,23 +140,12 @@ async function mapPost(
     status: raw.status as 'draft' | 'published',
     publishedAt: raw.publishedAt ? raw.publishedAt.toISOString() : null,
     updatedAt: raw.updatedAt.toISOString(),
-    commentCount: raw._count?.comments ?? 0,
+    commentCount: raw.commentCount ?? 0,
+    tags: raw.tags ? raw.tags.map((pt) => pt.tag.name) : [],
   };
 }
 
-async function mapPostSummary(
-  raw: {
-    id: string;
-    title: string;
-    slug: string;
-    content: string;
-    status: string;
-    publishedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-    _count?: { comments: number };
-  }
-): Promise<PostSummary> {
+async function mapPostSummary(raw: RawPost): Promise<PostSummary> {
   const contentHtml = await renderMarkdown(raw.content);
   return {
     id: raw.id,
@@ -92,9 +156,16 @@ async function mapPostSummary(
     status: raw.status as 'draft' | 'published',
     publishedAt: raw.publishedAt ? raw.publishedAt.toISOString() : null,
     updatedAt: raw.updatedAt.toISOString(),
-    commentCount: raw._count?.comments ?? 0,
+    commentCount: raw.commentCount ?? 0,
+    tags: raw.tags ? raw.tags.map((pt) => pt.tag.name) : [],
   };
 }
+
+// ─── Prisma include for tags ─────────────────────────────────────────────────
+
+const tagsInclude = {
+  tags: { include: { tag: { select: { name: true } } } },
+} as const;
 
 // ─── Slug generation ─────────────────────────────────────────────────────────
 
@@ -140,13 +211,17 @@ export async function generateUniqueSlug(title: string): Promise<string> {
 
 /**
  * Creates a new Post in Draft status with a unique auto-generated slug.
+ * If tags are provided, they are upserted and connected via PostTag.
  *
- * Requirements: 3.1, 3.2, 3.5, 3.7
+ * Requirements: 3.1, 3.2, 3.5, 3.7, 2.2, 2.7
  */
 export async function createPost(data: CreatePostDto): Promise<Post> {
-  const { title, content } = data;
+  const { title, content, tags } = data;
 
   const slug = await generateUniqueSlug(title);
+
+  // Upsert tags first so we have their IDs
+  const tagRecords = tags && tags.length > 0 ? await upsertTags(tags) : [];
 
   const post = await prisma.post.create({
     data: {
@@ -154,11 +229,16 @@ export async function createPost(data: CreatePostDto): Promise<Post> {
       slug,
       content,
       status: 'draft',
+      tags: tagRecords.length > 0
+        ? { create: tagRecords.map((t) => ({ tagId: t.id })) }
+        : undefined,
     },
-    include: { _count: { select: { comments: true } } },
+    include: {
+      ...tagsInclude,
+    },
   });
 
-  return mapPost(post);
+  return mapPost({ ...post, commentCount: 0 });
 }
 
 // ─── updatePost ──────────────────────────────────────────────────────────────
@@ -166,8 +246,9 @@ export async function createPost(data: CreatePostDto): Promise<Post> {
 /**
  * Updates an existing Post. If the title changes, regenerates the slug.
  * If the post is currently Published, auto-reverts to Draft.
+ * Tags are fully replaced (disconnect all → connect new list).
  *
- * Requirements: 3.3, 3.4, 3.5
+ * Requirements: 3.3, 3.4, 3.5, 2.2, 2.7
  */
 export async function updatePost(
   id: string,
@@ -175,7 +256,9 @@ export async function updatePost(
 ): Promise<Post> {
   const existing = await prisma.post.findUnique({
     where: { id },
-    include: { _count: { select: { comments: true } } },
+    include: {
+      ...tagsInclude,
+    },
   });
 
   if (!existing) {
@@ -207,13 +290,32 @@ export async function updatePost(
     updates.publishedAt = null;
   }
 
+  // Handle tags: full replace strategy
+  let tagOps: object | undefined;
+  if (data.tags !== undefined) {
+    // Disconnect all existing tags first, then connect new ones
+    const newTagRecords = data.tags.length > 0 ? await upsertTags(data.tags) : [];
+    tagOps = {
+      deleteMany: {},
+      ...(newTagRecords.length > 0
+        ? { create: newTagRecords.map((t) => ({ tagId: t.id })) }
+        : {}),
+    };
+  }
+
   const updated = await prisma.post.update({
     where: { id },
-    data: updates,
-    include: { _count: { select: { comments: true } } },
+    data: {
+      ...updates,
+      ...(tagOps !== undefined ? { tags: tagOps } : {}),
+    },
+    include: {
+      ...tagsInclude,
+    },
   });
 
-  return mapPost(updated);
+  const commentCount = await getCommentCountForPost(updated.id);
+  return mapPost({ ...updated, commentCount });
 }
 
 // ─── deletePost ──────────────────────────────────────────────────────────────
@@ -231,6 +333,12 @@ export async function deletePost(id: string): Promise<void> {
     throw createError(404, 'NOT_FOUND', 'Post not found');
   }
 
+  // Hapus semua komentar yang terkait post ini (tidak ada FK cascade langsung
+  // karena sistem komentar generik menggunakan contentType/contentId)
+  await prisma.comment.deleteMany({
+    where: { contentType: 'post', contentId: id },
+  });
+
   await prisma.post.delete({ where: { id } });
 }
 
@@ -245,7 +353,9 @@ export async function deletePost(id: string): Promise<void> {
 export async function publishPost(id: string): Promise<Post> {
   const existing = await prisma.post.findUnique({
     where: { id },
-    include: { _count: { select: { comments: true } } },
+    include: {
+      ...tagsInclude,
+    },
   });
 
   if (!existing) {
@@ -266,10 +376,25 @@ export async function publishPost(id: string): Promise<Post> {
       status: 'published',
       publishedAt: new Date(),
     },
-    include: { _count: { select: { comments: true } } },
+    include: {
+      ...tagsInclude,
+    },
   });
 
-  return mapPost(updated);
+  const commentCount = await getCommentCountForPost(updated.id);
+  const mappedPost = await mapPost({ ...updated, commentCount });
+
+  // Kirim notifikasi email ke semua subscriber.
+  // Kegagalan email TIDAK menggagalkan publish — log error dan lanjutkan.
+  // Requirements: 6.4, 6.6
+  try {
+    const emails = await getAllSubscriberEmails();
+    await mailService.sendNewPostNotification(mappedPost, emails);
+  } catch (emailErr) {
+    console.error('[publishPost] Failed to send email notifications:', emailErr);
+  }
+
+  return mappedPost;
 }
 
 // ─── unpublishPost ───────────────────────────────────────────────────────────
@@ -283,7 +408,9 @@ export async function publishPost(id: string): Promise<Post> {
 export async function unpublishPost(id: string): Promise<Post> {
   const existing = await prisma.post.findUnique({
     where: { id },
-    include: { _count: { select: { comments: true } } },
+    include: {
+      ...tagsInclude,
+    },
   });
 
   if (!existing) {
@@ -304,19 +431,22 @@ export async function unpublishPost(id: string): Promise<Post> {
       status: 'draft',
       publishedAt: null,
     },
-    include: { _count: { select: { comments: true } } },
+    include: {
+      ...tagsInclude,
+    },
   });
 
-  return mapPost(updated);
+  const commentCount = await getCommentCountForPost(updated.id);
+  return mapPost({ ...updated, commentCount });
 }
 
 // ─── getPublishedPosts ────────────────────────────────────────────────────────
 
 /**
  * Returns paginated Published posts ordered by published_at DESC.
- * Each item includes a comment count.
+ * Each item includes a comment count and tags.
  *
- * Requirements: 5.1, 5.4
+ * Requirements: 5.1, 5.4, 2.3
  */
 export async function getPublishedPosts(
   page: number,
@@ -330,12 +460,19 @@ export async function getPublishedPosts(
       orderBy: { publishedAt: 'desc' },
       skip,
       take: pageSize,
-      include: { _count: { select: { comments: true } } },
+      include: {
+        ...tagsInclude,
+      },
     }),
     prisma.post.count({ where: { status: 'published' } }),
   ]);
 
-  const data = await Promise.all(posts.map(mapPostSummary));
+  const postIds = posts.map((p) => p.id);
+  const commentCountMap = await getCommentCountsForPosts(postIds);
+
+  const data = await Promise.all(
+    posts.map((p) => mapPostSummary({ ...p, commentCount: commentCountMap.get(p.id) ?? 0 }))
+  );
 
   return {
     data,
@@ -365,12 +502,19 @@ export async function getAllPosts(
       orderBy: { updatedAt: 'desc' },
       skip,
       take: pageSize,
-      include: { _count: { select: { comments: true } } },
+      include: {
+        ...tagsInclude,
+      },
     }),
     prisma.post.count(),
   ]);
 
-  const data = await Promise.all(posts.map(mapPost));
+  const postIds = posts.map((p) => p.id);
+  const commentCountMap = await getCommentCountsForPosts(postIds);
+
+  const data = await Promise.all(
+    posts.map((p) => mapPost({ ...p, commentCount: commentCountMap.get(p.id) ?? 0 }))
+  );
 
   return {
     data,
@@ -384,15 +528,17 @@ export async function getAllPosts(
 // ─── getPostBySlug ────────────────────────────────────────────────────────────
 
 /**
- * Returns a single Published post by slug.
+ * Returns a single Published post by slug (includes tags).
  * Returns 404 if not found or if the post is a Draft.
  *
- * Requirements: 5.2, 5.3, 4.7
+ * Requirements: 5.2, 5.3, 4.7, 2.3
  */
 export async function getPostBySlug(slug: string): Promise<Post> {
   const post = await prisma.post.findUnique({
     where: { slug },
-    include: { _count: { select: { comments: true } } },
+    include: {
+      ...tagsInclude,
+    },
   });
 
   // Return 404 for missing OR draft posts (Req 4.7: never reveal draft existence)
@@ -400,7 +546,8 @@ export async function getPostBySlug(slug: string): Promise<Post> {
     throw createError(404, 'NOT_FOUND', 'Post not found');
   }
 
-  return mapPost(post);
+  const commentCount = await getCommentCountForPost(post.id);
+  return mapPost({ ...post, commentCount });
 }
 
 // ─── searchPosts ──────────────────────────────────────────────────────────────
@@ -408,9 +555,9 @@ export async function getPostBySlug(slug: string): Promise<Post> {
 /**
  * Full-text search over published posts using PostgreSQL `to_tsvector`.
  * Uses the 'indonesian' text search configuration to match the DB index.
- * Results are ordered by published_at DESC.
+ * Results are ordered by published_at DESC. Includes tags via separate query.
  *
- * Requirements: 5.5, 5.6, 5.7
+ * Requirements: 5.5, 5.6, 5.7, 2.3
  */
 export async function searchPosts(
   keyword: string,
@@ -419,7 +566,7 @@ export async function searchPosts(
   const skip = (page - 1) * SEARCH_PAGE_SIZE;
 
   // Use PostgreSQL full-text search via raw query for count + data
-  type RawPost = {
+  type RawSearchPost = {
     id: string;
     title: string;
     slug: string;
@@ -432,7 +579,7 @@ export async function searchPosts(
     total_count: bigint;
   };
 
-  const rows = await prisma.$queryRaw<RawPost[]>`
+  const rows = await prisma.$queryRaw<RawSearchPost[]>`
     SELECT
       p.id,
       p.title,
@@ -442,7 +589,7 @@ export async function searchPosts(
       p.published_at,
       p.created_at,
       p.updated_at,
-      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count,
+      (SELECT COUNT(*) FROM comments c WHERE c.content_type = 'post' AND c.content_id = p.id) AS comment_count,
       COUNT(*) OVER () AS total_count
     FROM posts p
     WHERE
@@ -454,6 +601,23 @@ export async function searchPosts(
   `;
 
   const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
+
+  // Fetch tags for the returned posts
+  const postIds = rows.map((r) => r.id);
+  const postTags = postIds.length > 0
+    ? await prisma.postTag.findMany({
+        where: { postId: { in: postIds } },
+        include: { tag: { select: { name: true } } },
+      })
+    : [];
+
+  // Build a map: postId → tag names
+  const tagsByPostId = new Map<string, string[]>();
+  for (const pt of postTags) {
+    const existing = tagsByPostId.get(pt.postId) ?? [];
+    existing.push(pt.tag.name);
+    tagsByPostId.set(pt.postId, existing);
+  }
 
   const data = await Promise.all(
     rows.map(async (row) => {
@@ -468,6 +632,7 @@ export async function searchPosts(
         publishedAt: row.published_at ? row.published_at.toISOString() : null,
         updatedAt: row.updated_at.toISOString(),
         commentCount: Number(row.comment_count),
+        tags: tagsByPostId.get(row.id) ?? [],
       };
       return summary;
     })
@@ -488,7 +653,7 @@ export { DEFAULT_PAGE_SIZE_PUBLIC, DEFAULT_PAGE_SIZE_ADMIN };
 // ─── getPostById ──────────────────────────────────────────────────────────────
 
 /**
- * Retrieves a post by its ID without status filtering.
+ * Retrieves a post by its ID without status filtering (includes tags).
  * Used by admin endpoints (edit page prefill).
  *
  * Returns 404 if the post does not exist.
@@ -498,13 +663,30 @@ export { DEFAULT_PAGE_SIZE_PUBLIC, DEFAULT_PAGE_SIZE_ADMIN };
 export async function getPostById(id: string): Promise<Post> {
   const post = await prisma.post.findUnique({
     where: { id },
-    include: { _count: { select: { comments: true } } },
+    include: {
+      ...tagsInclude,
+    },
   });
 
   if (!post) {
     throw createError(404, 'NOT_FOUND', 'Post not found');
   }
 
-  return mapPost(post);
+  const commentCount = await getCommentCountForPost(post.id);
+  return mapPost({ ...post, commentCount });
 }
 
+// ─── getAllTags ──────────────────────────────────────────────────────────────
+
+/**
+ * Returns all tags sorted alphabetically.
+ *
+ * Requirements: 2.4
+ */
+export async function getAllTags(): Promise<TagDto[]> {
+  const tags = await prisma.tag.findMany({
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true, slug: true },
+  });
+  return tags;
+}

@@ -13,6 +13,13 @@ vi.mock('../../lib/prisma', () => {
         findMany: vi.fn(),
         count: vi.fn(),
       },
+      tag: {
+        upsert: vi.fn(),
+        findMany: vi.fn(),
+      },
+      postTag: {
+        findMany: vi.fn(),
+      },
       $queryRaw: vi.fn(),
     },
   };
@@ -102,6 +109,8 @@ const resultCountArb = fc.integer({ min: 0, max: 10 });
 describe('Property 13: Search returns only matching Published posts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: postTag.findMany returns empty array (no tags for searched posts)
+    vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
   });
 
   /**
@@ -126,6 +135,7 @@ describe('Property 13: Search returns only matching Published posts', () => {
           resultCountArb,
           async (keyword, page, resultCount) => {
             vi.clearAllMocks();
+            vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
 
             // Mock: DB returns `resultCount` published posts matching the keyword
             const rawPosts = Array.from({ length: resultCount }, (_, i) =>
@@ -173,6 +183,7 @@ describe('Property 13: Search returns only matching Published posts', () => {
           fc.integer({ min: 1, max: 5 }),
           async (keyword, page, resultCount) => {
             vi.clearAllMocks();
+            vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
 
             // Seed the mock with posts that explicitly contain the keyword
             const rawPosts = Array.from({ length: resultCount }, (_, i) =>
@@ -213,6 +224,7 @@ describe('Property 13: Search returns only matching Published posts', () => {
       await fc.assert(
         fc.asyncProperty(keywordArb, pageArb, async (keyword, page) => {
           vi.clearAllMocks();
+          vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
 
           vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
 
@@ -252,6 +264,7 @@ describe('Property 13: Search returns only matching Published posts', () => {
           resultCountArb,
           async (keyword, page, resultCount) => {
             vi.clearAllMocks();
+            vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
 
             const SEARCH_PAGE_SIZE = 10; // constant from post.service.ts
 

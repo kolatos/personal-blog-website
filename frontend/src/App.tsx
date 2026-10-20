@@ -17,6 +17,8 @@ import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/admin/DashboardPage';
 import CreatePostPage from './pages/admin/CreatePostPage';
 import EditPostPage from './pages/admin/EditPostPage';
+import UsersAdminPage from './pages/admin/UsersAdminPage';
+import CommentsAdminPage from './pages/admin/CommentsAdminPage';
 
 // User pages
 import ProfilePage from './pages/user/ProfilePage';
@@ -89,6 +91,22 @@ function App() {
                 element={
                   <Layout>
                     <EditPostPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <Layout>
+                    <UsersAdminPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/comments"
+                element={
+                  <Layout>
+                    <CommentsAdminPage />
                   </Layout>
                 }
               />

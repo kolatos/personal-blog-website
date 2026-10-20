@@ -14,6 +14,7 @@ import {
   unpublishPost,
   deletePost,
   getAdminPostById,
+  getTags,
 } from '../controllers/post.controller.js';
 
 /**
@@ -160,3 +161,23 @@ router.delete(
 );
 
 export default router;
+
+// ─── Tags router ──────────────────────────────────────────────────────────────
+
+/**
+ * Tags Router — mounted at /api/tags
+ *
+ * Public routes:
+ *   GET / — list all tags alphabetically
+ *
+ * Requirements: 2.4
+ */
+export const tagsRouter = Router();
+
+/**
+ * GET /api/tags
+ * Public. Returns all tags sorted alphabetically.
+ *
+ * Requirements: 2.4
+ */
+tagsRouter.get('/', getTags);

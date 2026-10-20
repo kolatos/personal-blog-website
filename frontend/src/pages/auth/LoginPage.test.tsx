@@ -232,3 +232,28 @@ describe('LoginPage', () => {
     });
   });
 });
+
+describe('LoginPage — tombol kembali', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it('menampilkan tombol kembali', () => {
+    renderLoginPage();
+    expect(screen.getByRole('button', { name: /← kembali/i })).toBeInTheDocument();
+  });
+
+  it('memanggil navigate(-1) ketika history.length > 1', async () => {
+    // jsdom sets window.history.length to 2 by default when using MemoryRouter with initial entry
+    Object.defineProperty(window, 'history', {
+      value: { ...window.history, length: 2 },
+      writable: true,
+      configurable: true,
+    });
+
+    renderLoginPage();
+    await userEvent.click(screen.getByRole('button', { name: /← kembali/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(-1);
+  });
+});

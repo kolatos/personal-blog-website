@@ -1,4 +1,4 @@
-# Implementation Plan
+﻿# Implementation Plan
 
 ## Overview
 
@@ -13,14 +13,15 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   "waves": [
     { "id": 0, "tasks": ["1", "4", "5", "6", "7", "10"] },
     { "id": 1, "tasks": ["2", "3", "8", "9", "12"] },
-    { "id": 2, "tasks": ["11"] }
+    { "id": 2, "tasks": ["11"] },
+    { "id": 3, "tasks": ["13"] }
   ]
 }
 ```
 
 ## Tasks
 
-- [ ] 1. Instal dan konfigurasi shadcn/ui
+- [x] 1. Instal dan konfigurasi shadcn/ui
   - Jalankan `npx shadcn@latest init` di `frontend/` dengan memilih CSS variable theme yang ada tanpa menimpa `index.css`
   - Instal komponen yang diperlukan: `npx shadcn@latest add button input textarea badge card table pagination dialog alert-dialog popover command toggle-group skeleton separator avatar toast tabs`
   - Rename file yang konflik ke `.bak.tsx` terlebih dahulu (misalnya `Button.tsx` → `Button.bak.tsx`) sebelum menjalankan perintah di atas
@@ -29,7 +30,7 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `frontend/src/components/ui/` (di-generate), `frontend/components.json`
   - **Requires:** (none)
 
-- [ ] 2. Migrasi komponen UI inti ke shadcn
+- [x] 2. Migrasi komponen UI inti ke shadcn
   - Baca setiap file `.bak.tsx` yang ada untuk memahami prop API saat ini sebelum mengganti
   - Perbarui semua import site di `components/`, `pages/`, `hooks/`
   - Petakan `variant="primary"` ke `variant="default"` pada shadcn Button di semua call site
@@ -38,7 +39,7 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** Semua file yang mengimpor Button, Input, Badge, Pagination
   - **Requires:** 1
 
-- [ ] 3. Migrasi komponen layout dan admin ke shadcn
+- [x] 3. Migrasi komponen layout dan admin ke shadcn
   - `Navbar`: ganti raw `<button>` dengan shadcn `Button` ghost variant
   - `PostTable`: ganti `<table>/<thead>/<tbody>/<tr>/<td>` dengan shadcn `Table/TableHeader/TableBody/TableRow/TableCell`
   - `StatusBadge`: ganti dengan shadcn `Badge`; pertahankan logika warna hijau/kuning via `variant` atau `className`
@@ -48,10 +49,10 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `frontend/src/components/layout/Navbar.tsx`, `frontend/src/components/admin/PostTable.tsx`, `frontend/src/components/admin/StatusBadge.tsx`, `frontend/src/components/admin/PostEditor.tsx`, `frontend/src/pages/admin/DashboardPage.tsx`
   - **Requires:** 1
 
-- [ ] 4. Tag post — backend
+- [x] 4. Tag post — backend
   - Tambahkan model `Tag` (`id` uuid, `name` varchar unique, `slug` varchar unique) dan join table `PostTag` ke `prisma/schema.prisma`
   - Jalankan `npx prisma migrate dev --name add_post_tags`; jalankan `npx prisma generate`
-  - Perluas `CreatePostDto` dan `UpdatePostDto` di `backend/src/types/index.ts` dengan `tags?: string[]`
+  - Perluas `CreatePostDto` dan `UpdatePostDto` di `backend/src/types/index.ts` dengan `tags←: string[]`
   - Update `post.service.ts`: `createPost` upsert tags dengan nama lowercase, connect via PostTag; `updatePost` disconnect semua tag lama, upsert dan reconnect daftar baru; `mapPost`/`mapPostSummary` sertakan array `tags`; semua fungsi query sertakan tags dalam Prisma `include`
   - Tambahkan route `GET /api/tags` yang mengembalikan semua tag urut alfabetis
   - Unit test: upsert tag bersifat idempotent (nama sama dua kali → satu tag, tidak ada error)
@@ -61,7 +62,7 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `backend/prisma/schema.prisma`, `backend/src/types/index.ts`, `backend/src/services/post.service.ts`, `backend/src/routes/post.routes.ts`, `backend/src/schemas/post.schema.ts`
   - **Requires:** (none)
 
-- [ ] 5. Perbaikan komentar admin
+- [x] 5. Perbaikan komentar admin
   - Baca `backend/src/routes/comment.routes.ts` dan hapus `requireRole('user')` dari handler POST (pertahankan `authenticateJWT`)
   - Verifikasi DELETE menggunakan `authenticateJWT` tanpa role restriction (pengecekan admin dilakukan di service layer)
   - Baca `frontend/src/pages/public/PostDetailPage.tsx` dan hapus guard `user.role === 'user'` agar CommentForm ditampilkan untuk semua pengguna terotentikasi
@@ -70,7 +71,7 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `backend/src/routes/comment.routes.ts`, `frontend/src/pages/public/PostDetailPage.tsx`
   - **Requires:** (none)
 
-- [ ] 6. Sistem komentar generik dengan balasan — backend
+- [x] 6. Sistem komentar generik dengan balasan — backend
   - Update model `Comment` di `prisma/schema.prisma`: tambahkan `contentType String @db.VarChar(10)`, `contentId String @db.Uuid`, `parentId String? @db.Uuid` dengan self-relation `CommentReplies` dan `onDelete: Cascade`
   - Tulis migrasi `update_comments_generic` (dua langkah: tambah kolom + copy data `post_id` ke `content_id`, kemudian drop kolom `post_id` dan FK-nya)
   - Jalankan `npx prisma migrate dev --name update_comments_generic`; jalankan `npx prisma generate`
@@ -85,7 +86,7 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `backend/prisma/schema.prisma`, `backend/src/services/comment.service.ts`, `backend/src/routes/comment.routes.ts`, `backend/src/schemas/comment.schema.ts`
   - **Requires:** (none)
 
-- [ ] 7. KaTeX rendering dan komponen MarkdownRenderer
+- [x] 7. KaTeX rendering dan komponen MarkdownRenderer
   - Jalankan `npm install remark-math rehype-katex katex` di `frontend/`
   - Tambahkan `import 'katex/dist/katex.min.css'` ke `frontend/src/main.tsx`
   - Buat `MarkdownRenderer.tsx` yang membungkus `react-markdown` dengan `remarkMath` + `rehypeKatex` dan menerapkan prose Tailwind styles yang ada; menerima prop `content: string`
@@ -98,7 +99,7 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `frontend/src/main.tsx`, `frontend/src/components/shared/MarkdownRenderer.tsx`, `frontend/src/pages/public/PostDetailPage.tsx`, `frontend/src/components/admin/PostEditor.tsx`
   - **Requires:** (none)
 
-- [ ] 8. Tag post — frontend
+- [x] 8. Tag post — frontend
   - Update tipe `Post` dan `PostSummary` di `frontend/src/types/index.ts` untuk menyertakan `tags: { id: string; name: string; slug: string }[]`
   - Buat `api/tags.ts` dengan fungsi `getTags()`
   - Buat komponen `TagChip` menggunakan shadcn `Badge`
@@ -110,12 +111,12 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `frontend/src/types/index.ts`, `frontend/src/api/tags.ts`, `frontend/src/components/shared/TagChip.tsx`, `frontend/src/components/shared/TagInput.tsx`, `frontend/src/components/blog/PostCard.tsx`, `frontend/src/pages/public/PostDetailPage.tsx`, `frontend/src/components/admin/PostEditor.tsx`, `frontend/src/pages/admin/CreatePostPage.tsx`, `frontend/src/pages/admin/EditPostPage.tsx`
   - **Requires:** 4, 1
 
-- [ ] 9. Balasan komentar — frontend
+- [x] 9. Balasan komentar — frontend
   - Update tipe `Comment` di `frontend/src/types/index.ts`: tambahkan `parentId: string | null` dan `replies: Comment[]`
   - Update `api/comments.ts` untuk menggunakan endpoint generik baru (`GET /api/comments?contentType=&contentId=`, `POST /api/comments`, `DELETE /api/comments/:id`)
   - Update `CommentList`: render hanya komentar level atas di daftar utama; render `replies` masing-masing dengan indentasi di bawah (gunakan `ml-8` atau serupa); tambahkan tombol "Reply" pada semua komentar (baik level atas maupun balasan); tambahkan state `replyingTo: string | null` untuk toggle form inline pada komentar level atas
   - Logika klik "Reply": jika komentar adalah level atas (`parentId === null`) — buka CommentForm inline di bawah komentar tersebut; jika komentar adalah balasan (`parentId !== null`) — scroll ke CommentForm level atas terdekat dan isi dengan `@authorUsername` penulis balasan tersebut (tidak membuka form baru yang lebih dalam)
-  - Update `CommentForm`: terima prop opsional `parentId?: string` dan `parentAuthorUsername?: string` (di-prepend sebagai `@mention`); pass `contentType`, `contentId`, `parentId` ke API call
+  - Update `CommentForm`: terima prop opsional `parentId?: string` dan `parentAuthorUsername←: string` (di-prepend sebagai `@mention`); pass `contentType`, `contentId`, `parentId` ke API call
   - Update `PostDetailPage` untuk pass `contentType="post"` dan `contentId={post.id}` ke `CommentList` dan `CommentForm`
   - Component test: komentar level atas merender dengan tombol "Reply"
   - Component test: balasan merender dengan tombol "Reply"
@@ -125,7 +126,7 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `frontend/src/types/index.ts`, `frontend/src/api/comments.ts`, `frontend/src/components/blog/CommentList.tsx`, `frontend/src/components/blog/CommentForm.tsx`, `frontend/src/pages/public/PostDetailPage.tsx`
   - **Requires:** 6
 
-- [ ] 10. Langganan email — backend
+- [x] 10. Langganan email — backend
   - Tambahkan model `Subscription` (`id`, `userId @unique FK → User`, `createdAt`) ke `prisma/schema.prisma`
   - Jalankan `npx prisma migrate dev --name add_subscriptions`; jalankan `npx prisma generate`
   - Jalankan `npm install resend` di `backend/`
@@ -140,12 +141,12 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `backend/prisma/schema.prisma`, `backend/src/services/mail.service.ts`, `backend/src/services/subscription.service.ts`, `backend/src/routes/subscription.routes.ts`, `backend/src/services/post.service.ts`
   - **Requires:** (none)
 
-- [ ] 11. UI langganan email + dashboard admin yang diperluas — frontend
+- [x] 11. UI langganan email + dashboard admin yang diperluas — frontend
   - Buat `api/subscriptions.ts` dengan fungsi `getStatus()`, `subscribe()`, `unsubscribe()`
   - Buat hook `useSubscription` (`useQuery` + `useMutation`, invalidates on success) di `hooks/useSubscription.ts`
   - Buat komponen `SubscribeButton` (tidak merender apa pun jika tidak terotentikasi, tampilkan "Subscribe"/"Subscribed", loading state saat mutasi)
   - Mount `SubscribeButton` di `PostDetailPage` dan area header `BlogPage`/`HomePage`
-  - Buat komponen `StatCard` (shadcn `Card`, props `label/value/icon/href?`) di `components/admin/StatCard.tsx`
+  - Buat komponen `StatCard` (shadcn `Card`, props `label/value/icon/href←`) di `components/admin/StatCard.tsx`
   - Buat backend `routes/admin.routes.ts` dengan: `GET /api/admin/stats` (totalPosts/totalComments/totalUsers/recentPosts[5]/recentComments[5]/recentUsers[5]), `GET /api/admin/users` (dipaginasi dengan commentCount), `DELETE /api/admin/users/:id`, `GET /api/admin/comments` (dipaginasi, filter `?contentType=` opsional)
   - Desain ulang `DashboardPage`: baris `StatCard` + tabel recent activity
   - Buat `UsersAdminPage` di `/admin/users`: shadcn `Table` + shadcn `AlertDialog` untuk konfirmasi hapus
@@ -160,7 +161,7 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `frontend/src/api/subscriptions.ts`, `frontend/src/hooks/useSubscription.ts`, `frontend/src/components/shared/SubscribeButton.tsx`, `frontend/src/components/admin/StatCard.tsx`, `frontend/src/pages/admin/DashboardPage.tsx`, `frontend/src/pages/admin/UsersAdminPage.tsx`, `frontend/src/pages/admin/CommentsAdminPage.tsx`, `frontend/src/App.tsx`, `backend/src/routes/admin.routes.ts`, `backend/src/controllers/stats.controller.ts`
   - **Requires:** 10, 3
 
-- [ ] 12. Toolbar formatting Markdown — PostEditor
+- [x] 12. Toolbar formatting Markdown — PostEditor
   - Buat komponen `MarkdownToolbar` di `frontend/src/components/admin/MarkdownToolbar.tsx` sebagai komponen React murni tanpa dependensi library tambahan
   - Toolbar menyediakan tombol dengan ikon yang sesuai untuk: Undo (↩), Redo (↪), Bold (**B**), Italic (*I*), H1/H2/H3/H4 (tombol heading terpisah), Strikethrough (~~S~~), Unordered list, Ordered list, Task list (☐), Blockquote (>), Inline code (``), Code block ({ }), Inline math ($), Display math ($), Tabel (⊞), Link (🔗), Insert image URL (🖼)
   - Implementasikan fungsi helper murni tanpa side effect yang dapat diuji secara terpisah:
@@ -180,6 +181,17 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
   - **Files:** `frontend/src/components/admin/MarkdownToolbar.tsx`, `frontend/src/components/admin/PostEditor.tsx`
   - **Requires:** 1
 
+- [x] 13. Tombol kembali (back button)
+  - **`PostDetailPage`**: tambahkan tombol `<Button variant="ghost">← Kembali ke Blog</Button>` di atas heading judul post yang menavigasi ke `/` menggunakan `<Link>` atau `useNavigate` (akan diupdate ke `/blog` di Stage 2)
+  - **`LoginPage`**: tambahkan tombol `<Button variant="ghost">← Kembali</Button>` di atas form login; klik memanggil `useNavigate(-1)` jika `window.history.length > 1`, fallback ke `navigate('/')`
+  - **`RegisterPage`**: tambahkan tombol `<Button variant="ghost">← Kembali</Button>` di atas form registrasi; logika navigasi sama seperti LoginPage
+  - **Subhalaman admin**: tambahkan tombol `<Button variant="ghost">← Kembali ke Dashboard</Button>` yang menavigasi ke `/admin` di: `CreatePostPage`, `EditPostPage`, `UsersAdminPage`, `CommentsAdminPage`
+  - Semua tombol kembali harus berada di bagian kiri atas, sebelum heading utama halaman (`<h1>`)
+  - Component test: `PostDetailPage` merender tautan/tombol kembali dengan href menuju halaman blog
+  - Component test: `LoginPage` merender tombol kembali
+  - Component test: `CreatePostPage` merender tombol "← Kembali ke Dashboard" dengan navigasi ke `/admin`
+  - **Files:** `frontend/src/pages/public/PostDetailPage.tsx`, `frontend/src/pages/auth/LoginPage.tsx`, `frontend/src/pages/auth/RegisterPage.tsx`, `frontend/src/pages/admin/CreatePostPage.tsx`, `frontend/src/pages/admin/EditPostPage.tsx`, `frontend/src/pages/admin/UsersAdminPage.tsx`, `frontend/src/pages/admin/CommentsAdminPage.tsx`
+  - **Requires:** 2, 11
 
 ## Notes
 
@@ -192,3 +204,4 @@ Setiap task dapat diverifikasi secara independen. Kerjakan sesuai urutan wave �
 - Setelah Task 6, jalankan `npx prisma migrate dev --name update_comments_generic` dengan hati-hati karena melibatkan migrasi data dari `postId` ke `contentId`.
 - Stage 1 tidak memperkenalkan halaman publik baru — semua perubahan berada di blog section yang ada dan dashboard admin.
 - Tidak ada perubahan kode di luar `backend/` dan `frontend/src/` — tidak ada file infrastruktur yang dimodifikasi.
+

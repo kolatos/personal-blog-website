@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import { Button } from '../ui/button';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -78,21 +79,24 @@ export default function Navbar() {
 
           {/* Logout button (authenticated only) */}
           {user && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={logout}
-              className="text-sm text-foreground hover:text-destructive transition-colors"
+              className="text-sm text-foreground hover:text-destructive"
             >
               Keluar
-            </button>
+            </Button>
           )}
 
           {/* Dark mode toggle */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
-            className="rounded-md p-1.5 text-foreground hover:bg-muted transition-colors"
           >
             {theme === 'dark' ? (
               /* Sun icon */
@@ -128,7 +132,7 @@ export default function Navbar() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
-          </button>
+          </Button>
         </div>
       </nav>
     </header>

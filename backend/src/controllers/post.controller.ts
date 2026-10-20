@@ -346,3 +346,29 @@ export async function getAdminPostById(
     res.status(500).json(INTERNAL_ERROR_RESPONSE);
   }
 }
+
+// ─── GET /api/tags ────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/tags
+ * Public. Returns all tags sorted alphabetically.
+ *
+ * Requirements: 2.4
+ */
+export async function getTags(
+  _req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const tags = await postService.getAllTags();
+    res.status(200).json(tags);
+  } catch (err) {
+    if (isServiceError(err)) {
+      res.status(err.status).json({
+        error: { code: err.code, message: err.message },
+      });
+      return;
+    }
+    res.status(500).json(INTERNAL_ERROR_RESPONSE);
+  }
+}

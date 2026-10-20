@@ -6,7 +6,10 @@ import { getComments, deleteComment } from '../../api/comments';
 import type { Comment } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { CommentList } from '../../components/blog/CommentList';
-import { CommentForm } from '../../components/blog/CommentForm';
+import { MarkdownRenderer } from '../../components/shared/MarkdownRenderer';
+import { TagChip } from '../../components/shared/TagChip';
+import { SubscribeButton } from '../../components/shared/SubscribeButton';
+import { Button } from '../../components/ui/button';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -79,8 +82,8 @@ export default function PostDetailPage() {
 
   // Fetch comments — only after post is loaded; seed local state on success
   const { data: fetchedComments } = useQuery({
-    queryKey: ['comments', post?.id],
-    queryFn: () => getComments(post!.id),
+    queryKey: ['comments', 'post', post?.id],
+    queryFn: () => getComments('post', post!.id),
     enabled: !!post?.id,
   });
 
@@ -88,20 +91,45 @@ export default function PostDetailPage() {
     if (fetchedComments) setLocalComments(fetchedComments);
   }, [fetchedComments]);
 
-  // Add a new comment optimistically
+  // Total comment count including all replies
+  const totalCommentCount = localComments.reduce(
+    (acc, c) => acc + 1 + (c.replies?.length ?? 0),
+    0,
+  );
+
+  // Add a new comment/reply
   function handleCommentAdded(comment: Comment) {
-    setLocalComments((prev) => [...prev, comment]);
-    // Invalidate so a background refetch stays in sync
-    void queryClient.invalidateQueries({ queryKey: ['comments', post?.id] });
+    if (comment.parentId) {
+      // It's a reply — insert it into the parent's replies array
+      setLocalComments((prev) =>
+        prev.map((c) =>
+          c.id === comment.parentId
+            ? { ...c, replies: [...(c.replies ?? []), comment] }
+            : c,
+        ),
+      );
+    } else {
+      // Top-level comment
+      setLocalComments((prev) => [...prev, { ...comment, replies: [] }]);
+    }
+    void queryClient.invalidateQueries({ queryKey: ['comments', 'post', post?.id] });
   }
 
-  // Delete a comment by ID
+  // Delete a comment by ID (works for both top-level and replies)
   async function handleDeleteComment(commentId: string) {
     if (!post) return;
     setDeletingId(commentId);
     try {
-      await deleteComment(post.id, commentId);
-      setLocalComments((prev) => prev.filter((c) => c.id !== commentId));
+      await deleteComment(commentId);
+      setLocalComments((prev) => {
+        // Remove top-level comment
+        const withoutTop = prev.filter((c) => c.id !== commentId);
+        // Remove from replies
+        return withoutTop.map((c) => ({
+          ...c,
+          replies: (c.replies ?? []).filter((r) => r.id !== commentId),
+        }));
+      });
     } finally {
       setDeletingId(undefined);
     }
@@ -131,57 +159,42 @@ export default function PostDetailPage() {
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-10">
+      {/* Back button */}
+      <div className="mb-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/" data-testid="back-to-blog">← Kembali ke Blog</Link>
+        </Button>
+      </div>
+
       {/* Post header */}
       <article data-testid="post-article">
         <header className="mb-6">
           <h1 className="text-3xl font-bold text-foreground leading-tight mb-2" data-testid="post-title">
             {post.title}
           </h1>
-          {publishedDate && (
-            <time
-              dateTime={post.publishedAt ?? undefined}
-              className="text-sm text-muted-foreground"
-            >
-              {publishedDate}
-            </time>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            {publishedDate && (
+              <time
+                dateTime={post.publishedAt ?? undefined}
+                className="text-sm text-muted-foreground"
+              >
+                {publishedDate}
+              </time>
+            )}
+            <SubscribeButton />
+          </div>
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3" data-testid="post-tags">
+              {post.tags.map((tag) => (
+                <TagChip key={tag.id} name={tag.name} />
+              ))}
+            </div>
           )}
         </header>
 
-        {/* Post body — rendered HTML from server */}
-        <div
-          className={[
-            'text-foreground leading-relaxed',
-            // Headings
-            '[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-8 [&_h1]:mb-3',
-            '[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-7 [&_h2]:mb-3',
-            '[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-6 [&_h3]:mb-2',
-            '[&_h4]:text-base [&_h4]:font-semibold [&_h4]:mt-5 [&_h4]:mb-2',
-            // Paragraphs
-            '[&_p]:mb-4',
-            // Lists
-            '[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4',
-            '[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4',
-            '[&_li]:mb-1',
-            // Blockquote
-            '[&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground [&_blockquote]:my-4',
-            // Code
-            '[&_pre]:bg-muted [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:my-4 [&_pre]:text-sm',
-            '[&_code]:bg-muted [&_code]:rounded [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_code]:font-mono',
-            '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
-            // Links
-            '[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_a]:hover:opacity-80',
-            // Images
-            '[&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-4',
-            // Horizontal rule
-            '[&_hr]:border-border [&_hr]:my-6',
-            // Strong / em
-            '[&_strong]:font-semibold',
-            '[&_em]:italic',
-          ].join(' ')}
-          data-testid="post-content"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: post.contentHtml }}
-        />
+        {/* Post body — rendered with KaTeX support */}
+        <MarkdownRenderer content={post.content} />
       </article>
 
       {/* Divider */}
@@ -190,30 +203,32 @@ export default function PostDetailPage() {
       {/* Comments section */}
       <section aria-labelledby="comments-heading">
         <h2 id="comments-heading" className="text-xl font-semibold text-foreground mb-6">
-          Komentar ({localComments.length})
+          Komentar ({totalCommentCount})
         </h2>
 
         <CommentList
-          postId={post.id}
+          contentType="post"
+          contentId={post.id}
           comments={localComments}
           currentUserId={user?.id}
           currentUserRole={user?.role}
           onDeleteComment={handleDeleteComment}
+          onCommentAdded={handleCommentAdded}
           isDeletingId={deletingId}
+          isAuthenticated={!!user}
         />
 
-        <div className="mt-6">
-          {user ? (
-            <CommentForm postId={post.id} onCommentAdded={handleCommentAdded} />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              <Link to="/login" className="text-primary underline underline-offset-2 hover:opacity-80">
-                Login
-              </Link>{' '}
-              untuk memberikan komentar.
-            </p>
-          )}
-        </div>
+        {!user && (
+          <p className="text-sm text-muted-foreground mt-4">
+            <Link
+              to="/login"
+              className="text-primary underline underline-offset-2 hover:opacity-80"
+            >
+              Login
+            </Link>{' '}
+            untuk memberikan komentar.
+          </p>
+        )}
       </section>
     </main>
   );

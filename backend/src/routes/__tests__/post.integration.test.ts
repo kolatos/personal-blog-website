@@ -349,14 +349,14 @@ describe('Cascade delete: post dengan komentar → hapus post → komentar ikut 
     // Tambahkan komentar langsung ke DB (lebih efisien daripada via API)
     await prisma.comment.createMany({
       data: [
-        { postId, authorId: regularUserId, content: 'Komentar pertama.' },
-        { postId, authorId: regularUserId, content: 'Komentar kedua.' },
-        { postId, authorId: regularUserId, content: 'Komentar ketiga.' },
+        { contentType: 'post', contentId: postId, authorId: regularUserId, content: 'Komentar pertama.' },
+        { contentType: 'post', contentId: postId, authorId: regularUserId, content: 'Komentar kedua.' },
+        { contentType: 'post', contentId: postId, authorId: regularUserId, content: 'Komentar ketiga.' },
       ],
     });
 
     // Verifikasi komentar ada
-    const commentCount = await prisma.comment.count({ where: { postId } });
+    const commentCount = await prisma.comment.count({ where: { contentType: 'post', contentId: postId } });
     expect(commentCount).toBe(3);
   });
 
@@ -374,7 +374,7 @@ describe('Cascade delete: post dengan komentar → hapus post → komentar ikut 
     expect(deletedPost).toBeNull();
 
     // Verifikasi semua komentar juga terhapus (cascade)
-    const remainingComments = await prisma.comment.count({ where: { postId } });
+    const remainingComments = await prisma.comment.count({ where: { contentType: 'post', contentId: postId } });
     expect(remainingComments).toBe(0);
   });
 });

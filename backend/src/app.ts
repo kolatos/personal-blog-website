@@ -3,8 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import authRouter from './routes/auth.routes.js';
 import postRouter from './routes/post.routes.js';
-import commentRouter from './routes/comment.routes.js';
+import { tagsRouter } from './routes/post.routes.js';
+import legacyCommentRouter, { commentRouter } from './routes/comment.routes.js';
 import userRouter from './routes/user.routes.js';
+import subscriptionRouter from './routes/subscription.routes.js';
+import adminRouter from './routes/admin.routes.js';
 
 /**
  * Express application instance.
@@ -35,30 +38,53 @@ app.get('/health', (_req: Request, res: Response) => {
 // --- API routes ---------------------------------------------------------------
 
 /**
- * Auth routes � register, login, logout
+ * Auth routes — register, login, logout
  * Requirements: 1.x, 2.x
  */
 app.use('/api/auth', authRouter);
 
 /**
- * Post routes � CRUD for posts, publish/unpublish, search
+ * Post routes — CRUD for posts, publish/unpublish, search
  * Requirements: 3.x, 4.x, 5.x
  */
 app.use('/api/posts', postRouter);
 
 /**
- * Comment routes � nested under posts
- * Express mergeParams is enabled on the comment router so that :postId
- * from this parent path is available inside handlers.
- * Requirements: 6.x
+ * Tags routes — public tag listing
+ * Requirements: 2.4
  */
-app.use('/api/posts/:postId/comments', commentRouter);
+app.use('/api/tags', tagsRouter);
 
 /**
- * User routes � profile management (username/password updates)
+ * Generic comment routes — GET/POST/DELETE untuk semua content type
+ * Requirements: 6.x
+ */
+app.use('/api/comments', commentRouter);
+
+/**
+ * Legacy comment routes — nested di bawah posts untuk backward-compatibility
+ * Express mergeParams diaktifkan pada legacyCommentRouter agar :postId tersedia.
+ * Requirements: 6.x
+ */
+app.use('/api/posts/:postId/comments', legacyCommentRouter);
+
+/**
+ * User routes — profile management (username/password updates)
  * Requirements: 8.x
  */
 app.use('/api/users', userRouter);
+
+/**
+ * Subscription routes — subscribe/unsubscribe/status untuk email notifikasi
+ * Requirements: 6.1, 6.2, 6.3
+ */
+app.use('/api/subscriptions', subscriptionRouter);
+
+/**
+ * Admin routes — stats, user management, comment management
+ * Requirements: 7.1, 7.3, 7.4, 7.6
+ */
+app.use('/api/admin', adminRouter);
 
 // --- 404 handler --------------------------------------------------------------
 

@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PostEditor } from '../../components/admin/PostEditor';
 import { getAdminPostById, updatePost } from '../../api/posts';
+import { Button } from '../../components/ui/button';
 
 export default function EditPostPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,8 +20,8 @@ export default function EditPostPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ title, content }: { title: string; content: string }) =>
-      updatePost(id!, { title, content }),
+    mutationFn: ({ title, content, tags }: { title: string; content: string; tags: string[] }) =>
+      updatePost(id!, { title, content, tags }),
     onSuccess: () => {
       // Hapus cache agar DashboardPage fetch ulang data terbaru dari server
       queryClient.removeQueries({ queryKey: ['admin-posts'] });
@@ -29,8 +30,8 @@ export default function EditPostPage() {
     },
   });
 
-  async function handleSubmit(title: string, content: string) {
-    await mutation.mutateAsync({ title, content });
+  async function handleSubmit(title: string, content: string, tags: string[]) {
+    await mutation.mutateAsync({ title, content, tags });
   }
 
   if (isLoading) {
@@ -53,6 +54,11 @@ export default function EditPostPage() {
 
   return (
     <main className="container mx-auto px-4 py-8">
+      <div className="mb-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+          ← Kembali ke Dashboard
+        </Button>
+      </div>
       <h1 className="text-3xl font-bold mb-6">Edit Postingan</h1>
 
       {post.status === 'published' && (
@@ -68,6 +74,7 @@ export default function EditPostPage() {
       <PostEditor
         initialTitle={post.title}
         initialContent={post.content}
+        initialTags={post.tags?.map((t) => t.name) ?? []}
         submitLabel="Simpan Perubahan"
         onSubmit={handleSubmit}
         isSubmitting={mutation.isPending}

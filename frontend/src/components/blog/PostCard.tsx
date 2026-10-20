@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Post } from '../../types';
+import { TagChip } from '../shared/TagChip';
 
 interface PostCardProps {
   post: Post;
@@ -64,6 +65,15 @@ function PostCard({ post }: PostCardProps) {
 
       {summary && (
         <p className="text-muted-foreground text-sm leading-relaxed mb-4">{summary}</p>
+      )}
+
+      {/* Tags */}
+      {post.tags && post.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4" data-testid="post-card-tags">
+          {post.tags.map((tag) => (
+            <TagChip key={tag.id} name={tag.name} />
+          ))}
+        </div>
       )}
 
       <div className="flex items-center gap-4 text-xs text-muted-foreground">

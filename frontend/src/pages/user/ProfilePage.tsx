@@ -5,8 +5,8 @@ import { z } from 'zod';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import { updateUsername, updatePassword } from '../../api/users';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
 import type { ErrorResponse } from '../../types';
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
@@ -181,8 +181,7 @@ export default function ProfilePage() {
           />
           <Button
             type="submit"
-            variant="primary"
-            size="md"
+            variant="default"
             disabled={isUsernameSubmitting}
           >
             {isUsernameSubmitting ? 'Menyimpan...' : 'Simpan Username'}
@@ -226,8 +225,7 @@ export default function ProfilePage() {
           />
           <Button
             type="submit"
-            variant="primary"
-            size="md"
+            variant="default"
             disabled={isPasswordSubmitting}
           >
             {isPasswordSubmitting ? 'Menyimpan...' : 'Simpan Password'}

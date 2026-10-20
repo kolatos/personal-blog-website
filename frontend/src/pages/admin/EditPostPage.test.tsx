@@ -6,10 +6,14 @@ import { MemoryRouter } from 'react-router-dom';
 import EditPostPage from './EditPostPage';
 import type { Post } from '../../types';
 
-// ── Mock API module ───────────────────────────────────────────────────────────
+// ── Mock API modules ──────────────────────────────────────────────────────────
 vi.mock('../../api/posts', () => ({
   getAdminPostById: vi.fn(),
   updatePost: vi.fn(),
+}));
+
+vi.mock('../../api/tags', () => ({
+  getTags: vi.fn().mockResolvedValue([]),
 }));
 
 // ── Mock react-router-dom ─────────────────────────────────────────────────────
@@ -41,6 +45,7 @@ function makeDraftPost(overrides: Partial<Post> = {}): Post {
     publishedAt: null,
     updatedAt: '2024-01-15T10:00:00.000Z',
     commentCount: 0,
+    tags: [],
     ...overrides,
   };
 }
@@ -169,6 +174,7 @@ describe('EditPostPage', () => {
       expect(mockUpdatePost).toHaveBeenCalledWith('post-abc-123', {
         title: 'Judul Diperbarui',
         content: post.content,
+        tags: [],
       });
     });
   });

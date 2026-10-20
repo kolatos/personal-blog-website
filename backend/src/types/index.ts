@@ -28,11 +28,19 @@ export interface LoginDto {
 export interface CreatePostDto {
   title: string;
   content: string;
+  tags?: string[];
 }
 
 export interface UpdatePostDto {
   title?: string;
   content?: string;
+  tags?: string[];
+}
+
+export interface TagDto {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 /**
@@ -48,6 +56,7 @@ export interface Post {
   publishedAt: string | null;
   updatedAt: string;
   commentCount: number;
+  tags: string[];         // tag names
 }
 
 /**
@@ -63,6 +72,7 @@ export interface PostSummary {
   publishedAt: string | null;
   updatedAt: string;
   commentCount: number;
+  tags: string[];         // tag names
 }
 
 /**

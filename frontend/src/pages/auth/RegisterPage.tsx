@@ -6,6 +6,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { register as registerApi } from '../../api/auth';
 import type { ErrorResponse } from '../../types';
 import axios from 'axios';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
 
 const registerSchema = z.object({
   username: z
@@ -67,9 +69,22 @@ export default function RegisterPage() {
     }
   };
 
+  function handleBack() {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="bg-card rounded-lg p-8 shadow-md w-full max-w-sm">
+        <div className="mb-4">
+          <Button variant="ghost" size="sm" onClick={handleBack}>
+            ← Kembali
+          </Button>
+        </div>
         <h1 className="text-2xl font-bold text-center mb-6">Daftar</h1>
 
         {serverError && (
@@ -86,60 +101,45 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium mb-1">
-              Username
-            </label>
-            <input
+            <Input
               id="username"
               type="text"
+              label="Username"
               autoComplete="username"
+              error={errors.username?.message}
               {...register('username')}
-              className="w-full border border-input rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            {errors.username && (
-              <p className="text-destructive text-sm mt-1">{errors.username.message}</p>
-            )}
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
-              Email
-            </label>
-            <input
+            <Input
               id="email"
               type="email"
+              label="Email"
               autoComplete="email"
+              error={errors.email?.message}
               {...register('email')}
-              className="w-full border border-input rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            {errors.email && (
-              <p className="text-destructive text-sm mt-1">{errors.email.message}</p>
-            )}
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Password
-            </label>
-            <input
+            <Input
               id="password"
               type="password"
+              label="Password"
               autoComplete="new-password"
+              error={errors.password?.message}
               {...register('password')}
-              className="w-full border border-input rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            {errors.password && (
-              <p className="text-destructive text-sm mt-1">{errors.password.message}</p>
-            )}
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="bg-primary text-primary-foreground rounded-md px-4 py-2 w-full hover:opacity-90 disabled:opacity-50 mt-2"
+            className="w-full mt-2"
           >
             {isSubmitting ? 'Memproses...' : 'Daftar'}
-          </button>
+          </Button>
         </form>
 
         <p className="text-center text-sm mt-4">

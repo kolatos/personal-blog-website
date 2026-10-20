@@ -4,11 +4,13 @@ import apiClient from './client';
 export interface CreatePostPayload {
   title: string;
   content: string;
+  tags?: string[];
 }
 
 export interface UpdatePostPayload {
   title?: string;
   content?: string;
+  tags?: string[];
 }
 
 // ── Public endpoints ──────────────────────────────────────────────────────────

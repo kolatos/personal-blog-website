@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { searchPosts } from '../../api/posts';
 import { PostList } from '../../components/blog/PostList';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -78,7 +78,7 @@ export default function SearchPage() {
               data-testid="search-input"
             />
           </div>
-          <Button type="submit" variant="primary" size="md" className="shrink-0 mt-0">
+          <Button type="submit" variant="default" className="shrink-0 mt-0">
             Cari
           </Button>
         </div>

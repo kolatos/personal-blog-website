@@ -1,10 +1,10 @@
-# Implementation Plan
+﻿# Implementation Plan
 
 ## Overview
 
-8 task mencakup: skema DB inti + Module API backend (Task 20), digraf UI (Task 21), renderer module + sistem widget (Task 22), widget code runner + backend proxy (Task 23), admin module editor (Task 24), anotasi teks + catatan (Task 25), sistem flashcard (Task 26), dan pembaruan landing page + dashboard (Task 27).
+9 task mencakup: skema DB inti + Module API backend (Task 20), digraf UI (Task 21), renderer module + sistem widget (Task 22), widget code runner + backend proxy (Task 23), admin module editor (Task 24), anotasi teks + catatan (Task 25), sistem flashcard (Task 26), pembaruan landing page + dashboard (Task 27), dan tombol kembali learning section (Task 28).
 
-Task dinomori melanjutkan dari Stage 2 (yang berakhir di Task 19) untuk keterlacakan antar stage.
+Task dinomori melanjutkan dari Stage 2 (yang berakhir di Task 20) untuk keterlacakan antar stage.
 
 **Prerequisites**: Semua task Stage 1 dan Stage 2 selesai. Sistem komentar generik, `MarkdownRenderer`, shadcn/ui, React Router, dan seluruh infrastruktur navigasi admin sudah tersedia.
 
@@ -19,7 +19,8 @@ Task dinomori melanjutkan dari Stage 2 (yang berakhir di Task 19) untuk keterlac
     { "id": 3, "tasks": ["24"] },
     { "id": 4, "tasks": ["25"] },
     { "id": 5, "tasks": ["26"] },
-    { "id": 6, "tasks": ["27"] }
+    { "id": 6, "tasks": ["27"] },
+    { "id": 7, "tasks": ["28"] }
   ]
 }
 ```
@@ -149,7 +150,7 @@ Task dinomori melanjutkan dari Stage 2 (yang berakhir di Task 19) untuk keterlac
       ```
     - Buat `routes/run-code.routes.ts` yang di-mount di `/api/run-code`:
       - `POST /` — `authenticateJWT` + rate limiter per-user (20 req/menit dikeykan berdasarkan `req.user.id`) + handler
-      - Logika handler: (1) validasi body: `{ language, sourceCode, stdin? }` via Zod; (2) cari language ID dari `JUDGE0_LANGUAGE_IDS`; bahasa tidak dikenal → 400 `UNSUPPORTED_LANGUAGE`; (3) jika `JUDGE0_API_KEY` tidak ada → 503 `CODE_EXECUTION_UNAVAILABLE`; (4) POST ke Judge0 `submissions/?base64_encoded=false&wait=false`; (5) polling `submissions/:token?base64_encoded=false` setiap 1 detik sampai status `id >= 3` (selesai) atau timeout 10 detik; (6) kembalikan `{ stdout, stderr, status: statusDescription }`
+      - Logika handler: (1) validasi body: `{ language, sourceCode, stdin? }` via Zod; (2) cari language ID dari `JUDGE0_LANGUAGE_IDS`; bahasa tidak dikenal → 400 `UNSUPPORTED_LANGUAGE`; (3) jika `JUDGE0_API_KEY` tidak ada → 503 `CODE_EXECUTION_UNAVAILABLE`; (4) POST ke Judge0 `submissions/←base64_encoded=false&wait=false`; (5) polling `submissions/:token←base64_encoded=false` setiap 1 detik sampai status `id >= 3` (selesai) atau timeout 10 detik; (6) kembalikan `{ stdout, stderr, status: statusDescription }`
     - Mount `/api/run-code` di `app.ts`
     - Integration test: `POST /api/run-code` dengan mocked Judge0 response — mengembalikan stdout yang benar
     - Integration test: bahasa tidak didukung → 400
@@ -346,3 +347,15 @@ Task dinomori melanjutkan dari Stage 2 (yang berakhir di Task 19) untuk keterlac
 - SM-2 diimplementasikan sebagai pure function di `backend/src/lib/sm2.ts` — dapat diuji sepenuhnya tanpa database maupun Prisma.
 - Cycle detection diimplementasikan sebagai pure function yang diekspor dari `module.service.ts` — unit test-nya tidak memerlukan koneksi database.
 - Widget registry menggunakan pola open-closed: setiap task yang menambah widget hanya perlu membuat satu file baru + satu baris import di `ModuleDetailPage` — tidak ada perubahan pada `ModuleDetailPage` itu sendiri selain penambahan import.
+
+
+- [ ] 28. Tombol kembali (back button) � Learning section
+  - **`ModuleDetailPage`**: tambahkan tombol `<Button variant="ghost">← Kembali ke Learning</Button>` di bagian atas (sebelum heading judul module) yang menavigasi ke `/learning`
+  - **`FlashcardsPage`**: tambahkan tombol `<Button variant="ghost">← Kembali ke Learning</Button>` di bagian atas yang menavigasi ke `/learning`
+  - **`ModuleEditorPage`** (admin): tambahkan tombol `<Button variant="ghost">← Kembali ke Modules</Button>` yang menavigasi ke `/admin/learning/modules`
+  - Semua tombol menggunakan shadcn `Button variant="ghost"` dengan ikon panah kiri (←), ditempatkan sebelum `<h1>` halaman, konsisten dengan konvensi Stage 1 dan Stage 2
+  - Component test: `ModuleDetailPage` merender tombol kembali dengan href `/learning`
+  - Component test: `FlashcardsPage` merender tombol kembali dengan href `/learning`
+  - Component test: `ModuleEditorPage` merender tombol "← Kembali ke Modules" dengan navigasi ke `/admin/learning/modules`
+  - **Files:** `frontend/src/pages/learning/ModuleDetailPage.tsx`, `frontend/src/pages/learning/FlashcardsPage.tsx`, `frontend/src/pages/admin/ModuleEditorPage.tsx`
+  - **Requires:** 22, 26, 27

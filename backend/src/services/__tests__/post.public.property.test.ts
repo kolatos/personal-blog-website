@@ -14,6 +14,18 @@ vi.mock('../../lib/prisma', () => {
         findMany: vi.fn(),
         count: vi.fn(),
       },
+      comment: {
+        count: vi.fn().mockResolvedValue(0),
+        groupBy: vi.fn().mockResolvedValue([]),
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      tag: {
+        upsert: vi.fn(),
+        findMany: vi.fn(),
+      },
+      postTag: {
+        findMany: vi.fn(),
+      },
       $queryRaw: queryRawMock,
     },
   };
@@ -41,7 +53,6 @@ function buildPublishedPost(index: number) {
     publishedAt: new Date(now.getTime() - index * 60_000),
     createdAt: now,
     updatedAt: now,
-    _count: { comments: 0 },
   };
 }
 
@@ -99,6 +110,11 @@ const keywordArb = fc
 describe('Property 6: Public endpoint returns only Published posts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: postTag.findMany returns empty array
+    vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
+    // Default: comment mocks return 0
+    vi.mocked(prisma.comment.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.comment.groupBy).mockResolvedValue([] as never);
   });
 
   // ── getPublishedPosts ─────────────────────────────────────────────────────
@@ -225,6 +241,7 @@ describe('Property 6: Public endpoint returns only Published posts', () => {
             postCountArb,
             async (keyword, page, postCount) => {
               vi.clearAllMocks();
+              vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
 
               // Build raw query results — all with status='published'
               const rawPosts = Array.from({ length: postCount }, (_, i) =>
@@ -259,6 +276,7 @@ describe('Property 6: Public endpoint returns only Published posts', () => {
       await fc.assert(
         fc.asyncProperty(keywordArb, pageArb, async (keyword, page) => {
           vi.clearAllMocks();
+          vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
 
           vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
 
@@ -285,6 +303,7 @@ describe('Property 6: Public endpoint returns only Published posts', () => {
         await fc.assert(
           fc.asyncProperty(keywordArb, pageArb, async (keyword, page) => {
             vi.clearAllMocks();
+            vi.mocked(prisma.postTag.findMany).mockResolvedValue([] as never);
 
             // Return one published raw post — simulating the DB correctly
             // filtering by status = 'published' in the SQL WHERE clause

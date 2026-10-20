@@ -1,6 +1,6 @@
 import type { Post } from '../../types';
 import { PostCard } from './PostCard';
-import { Pagination } from '../ui/Pagination';
+import { Pagination } from '../ui/pagination';
 
 interface PostListProps {
   posts: Post[];

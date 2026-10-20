@@ -110,7 +110,8 @@ async function createTestPost(): Promise<string> {
  */
 async function createComments(postId: string, count: number): Promise<void> {
   const comments = Array.from({ length: count }, (_, i) => ({
-    postId,
+    contentType: 'post',
+    contentId: postId,
     authorId: testAuthorId,
     content: `Komentar test ke-${i + 1}`,
   }));
@@ -147,14 +148,14 @@ describe('Property 5: Post deletion cascades to comments', () => {
             await createComments(postId, commentCount);
 
             // (c) Verifikasi komentar sudah ada sebelum penghapusan
-            const before = await prisma.comment.count({ where: { postId } });
+            const before = await prisma.comment.count({ where: { contentType: 'post', contentId: postId } });
             expect(before).toBe(commentCount);
 
             // (d) Hapus post via PostService
             await deletePost(postId);
 
             // (e) Verifikasi semua komentar sudah terhapus (cascade)
-            const after = await prisma.comment.count({ where: { postId } });
+            const after = await prisma.comment.count({ where: { contentType: 'post', contentId: postId } });
             expect(after).toBe(0);
 
             // (f) Verifikasi post itu sendiri sudah tidak ada
@@ -197,8 +198,8 @@ describe('Property 5: Post deletion cascades to comments', () => {
             const deletedPost = await prisma.post.findUnique({ where: { id: postId } });
             expect(deletedPost).toBeNull();
 
-            // Jumlah komentar dengan postId ini harus nol (tidak ada yang dibuat)
-            const commentCount = await prisma.comment.count({ where: { postId } });
+            // Jumlah komentar dengan contentId ini harus nol (tidak ada yang dibuat)
+            const commentCount = await prisma.comment.count({ where: { contentType: 'post', contentId: postId } });
             expect(commentCount).toBe(0);
           },
         ),

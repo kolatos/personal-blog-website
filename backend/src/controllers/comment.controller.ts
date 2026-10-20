@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import * as commentService from '../services/comment.service.js';
-import type { CreateCommentDto } from '../schemas/comment.schema.js';
+import type { CreateCommentDto, CreateCommentLegacyDto } from '../schemas/comment.schema.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const INTERNAL_ERROR_RESPONSE = {
@@ -23,11 +23,48 @@ function isServiceError(
   return typeof e['status'] === 'number' && typeof e['code'] === 'string';
 }
 
-// ─── GET /api/posts/:postId/comments ─────────────────────────────────────────
+// ─── GET /api/comments?contentType=&contentId= ───────────────────────────────
+/**
+ * GET /api/comments?contentType=&contentId=
+ * Public. Mengembalikan komentar level atas dengan balasan bersarang.
+ *
+ * Requirements: 6.1, 6.2
+ */
+export async function getComments(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const contentType = String(req.query['contentType'] ?? '');
+  const contentId = String(req.query['contentId'] ?? '');
+
+  if (!contentType || !contentId) {
+    res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'contentType and contentId query parameters are required',
+      },
+    });
+    return;
+  }
+
+  try {
+    const comments = await commentService.getComments(contentType, contentId);
+    res.status(200).json({ data: comments });
+  } catch (err) {
+    if (isServiceError(err)) {
+      res.status(err.status).json({
+        error: { code: err.code, message: err.message },
+      });
+      return;
+    }
+    res.status(500).json(INTERNAL_ERROR_RESPONSE);
+  }
+}
+
+// ─── GET /api/posts/:postId/comments (legacy alias) ──────────────────────────
 /**
  * GET /api/posts/:postId/comments
- * Public. Returns all comments for the given post, ordered by created_at ASC.
- * Each comment includes the author's username.
+ * Public. Alias backward-compatible untuk mengambil komentar pada post.
  *
  * Requirements: 6.1, 6.2
  */
@@ -51,11 +88,11 @@ export async function getCommentsByPost(
   }
 }
 
-// ─── POST /api/posts/:postId/comments ────────────────────────────────────────
+// ─── POST /api/comments ───────────────────────────────────────────────────────
 /**
- * POST /api/posts/:postId/comments
- * Registered_User only. Adds a new comment to a published post.
- * Body is pre-validated by validateBody(CreateCommentSchema).
+ * POST /api/comments
+ * Authenticated. Tambah komentar baru pada konten apapun.
+ * Body divalidasi oleh validateBody(CreateCommentSchema).
  *
  * Requirements: 6.1, 6.3, 6.7
  */
@@ -63,10 +100,8 @@ export async function addComment(
   req: Request,
   res: Response
 ): Promise<void> {
-  const postId = String(req.params['postId']);
-  const { content } = req.body as CreateCommentDto;
+  const { contentType, contentId, content, parentId } = req.body as CreateCommentDto;
 
-  // req.user is populated by authenticateJWT middleware
   if (!req.user) {
     res.status(500).json(INTERNAL_ERROR_RESPONSE);
     return;
@@ -74,7 +109,13 @@ export async function addComment(
   const authorId = req.user.sub;
 
   try {
-    const comment = await commentService.addComment(postId, authorId, content);
+    const comment = await commentService.addComment(
+      contentType,
+      contentId,
+      authorId,
+      content,
+      parentId ?? null
+    );
     res.status(201).json({ data: comment });
   } catch (err) {
     if (isServiceError(err)) {
@@ -87,13 +128,51 @@ export async function addComment(
   }
 }
 
-// ─── DELETE /api/posts/:postId/comments/:commentId ─────────────────────────────
+// ─── POST /api/posts/:postId/comments (legacy alias) ─────────────────────────
 /**
- * DELETE /api/posts/:postId/comments/:commentId
- * Owner or Admin. Deletes a comment by ID.
- * - Comment owner can delete their own comment (Req 6.4)
- * - Admin can delete any comment (Req 6.5)
- * - Non-owner, non-admin gets 403 (Req 6.6)
+ * POST /api/posts/:postId/comments
+ * Authenticated. Alias backward-compatible untuk menambah komentar pada post.
+ * Body divalidasi oleh validateBody(CreateCommentLegacySchema).
+ *
+ * Requirements: 6.1, 6.3, 6.7
+ */
+export async function addCommentToPost(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const postId = String(req.params['postId']);
+  const { content, parentId } = req.body as CreateCommentLegacyDto;
+
+  if (!req.user) {
+    res.status(500).json(INTERNAL_ERROR_RESPONSE);
+    return;
+  }
+  const authorId = req.user.sub;
+
+  try {
+    const comment = await commentService.addCommentToPost(
+      postId,
+      authorId,
+      content,
+      parentId ?? null
+    );
+    res.status(201).json({ data: comment });
+  } catch (err) {
+    if (isServiceError(err)) {
+      res.status(err.status).json({
+        error: { code: err.code, message: err.message },
+      });
+      return;
+    }
+    res.status(500).json(INTERNAL_ERROR_RESPONSE);
+  }
+}
+
+// ─── DELETE /api/comments/:id ─────────────────────────────────────────────────
+/**
+ * DELETE /api/comments/:id
+ * Owner atau Admin. Hapus komentar berdasarkan ID.
+ * Cascade otomatis menghapus balasan di DB.
  *
  * Requirements: 6.4, 6.5, 6.6
  */
@@ -101,9 +180,8 @@ export async function deleteComment(
   req: Request,
   res: Response
 ): Promise<void> {
-  const commentId = String(req.params['commentId']);
+  const commentId = String(req.params['id'] ?? req.params['commentId']);
 
-  // req.user is populated by authenticateJWT middleware
   if (!req.user) {
     res.status(500).json(INTERNAL_ERROR_RESPONSE);
     return;

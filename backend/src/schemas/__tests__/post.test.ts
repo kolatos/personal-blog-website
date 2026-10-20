@@ -236,7 +236,7 @@ describe('UpdatePostSchema', () => {
       const result = UpdatePostSchema.safeParse({});
 
       expect(result.success).toBe(false);
-      expect(result.error?.errors[0].message).toBe('At least one of title or content must be provided');
+      expect(result.error?.errors[0].message).toBe('At least one of title, content, or tags must be provided');
     });
   });
 });

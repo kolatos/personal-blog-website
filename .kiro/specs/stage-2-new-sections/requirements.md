@@ -1,4 +1,4 @@
-# Requirements Document
+﻿# Requirements Document
 
 ## Introduction
 
@@ -122,3 +122,16 @@ Stage 2 menambahkan empat seksi publik baru: About, Projects, Fun, dan Landing P
 1. THE navigasi sidebar dashboard admin SHALL menyertakan tautan ke semua halaman admin baru: About, Projects, Fun.
 2. THE kartu statistik di DashboardPage SHALL diperbarui untuk menampilkan `totalProjects` dan `totalFunPosts` bersama counter yang sudah ada.
 3. THE endpoint `GET /api/admin/stats` SHALL mengembalikan `totalProjects` dan `totalFunPosts` dalam responsnya.
+
+### Requirement 7: Tombol Kembali (Back Button)
+
+**User Story:** Sebagai Pengguna, saya ingin tombol kembali yang jelas di setiap subhalaman Stage 2, sehingga saya dapat dengan mudah kembali ke halaman listing yang relevan.
+
+#### Acceptance Criteria
+
+1. THE `PostDetailPage` SHALL memperbarui tombol kembalinya dari Requirement 9 Stage 1 untuk menuju ke `/blog` setelah migrasi rute di Task 13.
+2. THE `ProjectDetailPage` di `/projects/:slug` SHALL menampilkan tombol "← Kembali ke Projects" di bagian atas konten yang menavigasi ke `/projects`.
+3. THE `FunDetailPage` di `/fun/:slug` SHALL menampilkan tombol "← Kembali ke Fun" di bagian atas konten yang menavigasi ke `/fun`.
+4. THE `AboutPage` di `/about` SHALL menampilkan tombol "← Kembali" di bagian atas yang menavigasi ke `/` (Landing Page).
+5. THE subhalaman admin baru SHALL menampilkan tombol "? Kembali ke Dashboard" atau "? Kembali ke [section]" yang relevan, mencakup: AboutAdminPage (`/admin`), ProjectEditorPage (`/admin/projects`), FunEditorPage (`/admin/fun`).
+6. THE tombol kembali SHALL menggunakan shadcn `Button` dengan variant `ghost` dan ikon panah kiri (←), konsisten dengan konvensi yang ditetapkan di Stage 1 Requirement 9.

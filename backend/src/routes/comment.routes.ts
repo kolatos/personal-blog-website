@@ -1,63 +1,53 @@
 import { Router } from 'express';
 import { authenticateJWT } from '../middleware/authenticateJWT.js';
-import { requireRole } from '../middleware/requireRole.js';
 import { validateBody } from '../middleware/validateBody.js';
-import { CreateCommentSchema } from '../schemas/comment.schema.js';
 import {
+  CreateCommentSchema,
+  CreateCommentLegacySchema,
+} from '../schemas/comment.schema.js';
+import {
+  getComments,
   getCommentsByPost,
   addComment,
+  addCommentToPost,
   deleteComment,
 } from '../controllers/comment.controller.js';
 
 /**
- * Comment Router — mounted at /api/posts/:postId/comments
+ * Generic Comment Router — di-mount di /api/comments
  *
- * Public routes (no auth required):
- *   GET  /                       — list all comments for a post
+ * Public routes (tanpa auth):
+ *   GET  /?contentType=&contentId=       — daftar komentar level atas + balasan
  *
- * Registered_User routes (require valid JWT with role='user'):
- *   POST /                       — add a new comment to a published post
+ * Authenticated routes (memerlukan JWT yang valid — semua role):
+ *   POST /                               — tambah komentar baru (generic)
  *
- * Owner or Admin routes (require valid JWT; ownership checked in handler):
- *   DELETE /:commentId           — delete a comment (owner or admin only)
+ * Owner or Admin routes:
+ *   DELETE /:id                          — hapus komentar (owner atau admin)
  *
  * Requirements: 6.1–6.7
- *
- * Note: Express mergeParams must be enabled on this router so that `:postId`
- * from the parent route (/api/posts/:postId/comments) is accessible via
- * req.params.postId inside the handlers.
  */
-const router = Router({ mergeParams: true });
+export const commentRouter = Router();
 
 // ─── Public routes ────────────────────────────────────────────────────────────
 
 /**
- * GET /api/posts/:postId/comments
- * Returns all comments for the given post, ordered by created_at ASC.
- * Each comment includes authorUsername.
- *
+ * GET /api/comments?contentType=&contentId=
+ * Mengembalikan komentar level atas + balasan bersarang untuk konten tertentu.
  * Requirements: 6.1, 6.2
  */
-router.get('/', getCommentsByPost);
+commentRouter.get('/', getComments);
 
-// ─── Registered_User routes ───────────────────────────────────────────────────
+// ─── Authenticated routes ─────────────────────────────────────────────────────
 
 /**
- * POST /api/posts/:postId/comments
- * Adds a new comment to a published post.
- *
- * Middleware chain:
- *  1. authenticateJWT  — verify token, populate req.user (Req 6.3)
- *  2. requireRole('user') — only Registered_Users can comment (Req 6.3)
- *  3. validateBody     — validate content against CreateCommentSchema (Req 6.7)
- *  4. addComment       — create the comment (Req 6.1, 6.3)
- *
+ * POST /api/comments
+ * Tambah komentar baru. Body: { contentType, contentId, content, parentId? }
  * Requirements: 6.1, 6.3, 6.7
  */
-router.post(
+commentRouter.post(
   '/',
   authenticateJWT,
-  requireRole('user'),
   validateBody(CreateCommentSchema),
   addComment
 );
@@ -65,15 +55,47 @@ router.post(
 // ─── Owner or Admin routes ────────────────────────────────────────────────────
 
 /**
- * DELETE /api/posts/:postId/comments/:commentId
- * Deletes a comment. Ownership/admin check is performed inside the handler.
- *
- * Middleware chain:
- *  1. authenticateJWT — verify token, populate req.user (Req 6.4, 6.5)
- *  2. deleteComment   — enforces owner-or-admin rule (Req 6.4, 6.5, 6.6)
- *
+ * DELETE /api/comments/:id
+ * Hapus komentar. Owner atau admin saja. Cascade menghapus balasan.
  * Requirements: 6.4, 6.5, 6.6
  */
-router.delete('/:commentId', authenticateJWT, deleteComment);
+commentRouter.delete('/:id', authenticateJWT, deleteComment);
 
-export default router;
+/**
+ * Legacy Comment Router — di-mount di /api/posts/:postId/comments
+ * Dipertahankan untuk backward-compatibility.
+ *
+ * Express mergeParams diaktifkan agar :postId dari parent route tersedia.
+ *
+ * Requirements: 6.1–6.7
+ */
+const legacyRouter = Router({ mergeParams: true });
+
+/**
+ * GET /api/posts/:postId/comments
+ * Alias backward-compatible — mengambil komentar berdasarkan postId.
+ * Requirements: 6.1, 6.2
+ */
+legacyRouter.get('/', getCommentsByPost);
+
+/**
+ * POST /api/posts/:postId/comments
+ * Alias backward-compatible — tambah komentar ke post.
+ * Body: { content, parentId? }
+ * Requirements: 6.1, 6.3, 6.7
+ */
+legacyRouter.post(
+  '/',
+  authenticateJWT,
+  validateBody(CreateCommentLegacySchema),
+  addCommentToPost
+);
+
+/**
+ * DELETE /api/posts/:postId/comments/:commentId
+ * Alias backward-compatible — hapus komentar.
+ * Requirements: 6.4, 6.5, 6.6
+ */
+legacyRouter.delete('/:commentId', authenticateJWT, deleteComment);
+
+export default legacyRouter;

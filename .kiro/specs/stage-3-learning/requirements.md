@@ -1,4 +1,4 @@
-# Requirements Document
+﻿# Requirements Document
 
 ## Introduction
 
@@ -172,3 +172,14 @@ Stage 3 menambahkan sistem Learning yang paling kompleks di seluruh website. Sis
 5. THE navigasi sidebar dashboard admin SHALL menyertakan tautan ke `/admin/learning/modules` dan `/admin/learning/paths`.
 6. THE endpoint `GET /api/admin/stats` SHALL diperbarui untuk menyertakan `totalModules`.
 7. THE kartu statistik di dashboard SHALL menampilkan `totalModules`.
+
+### Requirement 10: Tombol Kembali (Back Button) � Learning Section
+
+**User Story:** Sebagai Registered_User, saya ingin tombol kembali yang jelas di setiap subhalaman sistem Learning, sehingga saya dapat dengan mudah kembali ke halaman learning graph atau halaman listing yang relevan.
+
+#### Acceptance Criteria
+
+1. THE `ModuleDetailPage` di `/learning/:slug` SHALL menampilkan tombol "← Kembali ke Learning" di bagian atas konten yang menavigasi ke `/learning`.
+2. THE `FlashcardsPage` di `/learning/flashcards` SHALL menampilkan tombol "← Kembali ke Learning" di bagian atas yang menavigasi ke `/learning`.
+3. THE subhalaman admin Learning SHALL menampilkan tombol "? Kembali" yang relevan: `ModuleEditorPage` menampilkan "← Kembali ke Modules" (navigasi ke `/admin/learning/modules`); `PathsAdminPage` menampilkan "← Kembali ke Dashboard" (navigasi ke `/admin`).
+4. THE tombol kembali SHALL menggunakan shadcn `Button` dengan variant `ghost` dan ikon panah kiri (←), konsisten dengan konvensi yang ditetapkan di Stage 1 Requirement 9.

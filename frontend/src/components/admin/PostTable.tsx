@@ -1,6 +1,14 @@
 import type { Post } from '../../types';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { StatusBadge } from './StatusBadge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
 
 interface PostTableProps {
   posts: Post[];
@@ -70,63 +78,35 @@ function PostTable({
 
   return (
     <div className="w-full overflow-x-auto rounded-lg border border-border">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border bg-muted">
-            <th
-              scope="col"
-              className="px-4 py-3 text-left font-medium text-foreground"
-            >
-              Judul
-            </th>
-            <th
-              scope="col"
-              className="px-4 py-3 text-left font-medium text-foreground"
-            >
-              Status
-            </th>
-            <th
-              scope="col"
-              className="px-4 py-3 text-left font-medium text-foreground whitespace-nowrap"
-            >
-              Terakhir Diperbarui
-            </th>
-            <th
-              scope="col"
-              className="px-4 py-3 text-right font-medium text-foreground"
-            >
-              Aksi
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {posts.map((post, index) => (
-            <tr
-              key={post.id}
-              className={[
-                'border-b border-border transition-colors hover:bg-muted/50',
-                index === posts.length - 1 ? 'border-b-0' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Judul</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="whitespace-nowrap">Terakhir Diperbarui</TableHead>
+            <TableHead className="text-right">Aksi</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {posts.map((post) => (
+            <TableRow key={post.id}>
               {/* Title */}
-              <td className="px-4 py-3 text-foreground">
+              <TableCell className="text-foreground">
                 <span className="line-clamp-2 font-medium">{post.title}</span>
-              </td>
+              </TableCell>
 
               {/* Status badge */}
-              <td className="px-4 py-3">
+              <TableCell>
                 <StatusBadge status={post.status} />
-              </td>
+              </TableCell>
 
               {/* Last updated */}
-              <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+              <TableCell className="text-muted-foreground whitespace-nowrap">
                 {formatDate(post.updatedAt)}
-              </td>
+              </TableCell>
 
               {/* Action buttons */}
-              <td className="px-4 py-3">
+              <TableCell>
                 <div className="flex items-center justify-end gap-2">
                   <Button
                     variant="outline"
@@ -165,11 +145,11 @@ function PostTable({
                     Hapus
                   </Button>
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
