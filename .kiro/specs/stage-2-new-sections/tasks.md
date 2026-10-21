@@ -23,7 +23,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
 
 ## Tasks
 
-- [ ] 13. Migrasi rute blog
+- [x] 13. Migrasi rute blog
   - Rename `frontend/src/pages/public/HomePage.tsx` menjadi `BlogPage.tsx`; perbarui nama komponen di dalamnya
   - Update `App.tsx`: ubah rute `/` dari `<BlogPage>` menjadi `<LandingPage>` (buat stub `LandingPage.tsx` yang mereturn `<div>Landing — coming soon</div>` untuk sekarang); tambahkan rute `/blog` → `<BlogPage>`
   - Update `Navbar`: ubah tautan "Beranda" / "Blog" untuk menunjuk ke `/blog`
@@ -34,7 +34,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
   - **Files:** `frontend/src/pages/public/BlogPage.tsx` (renamed dari `HomePage.tsx`), `frontend/src/App.tsx`, `frontend/src/components/layout/Navbar.tsx`, `frontend/src/pages/public/PostDetailPage.tsx`, `frontend/src/contexts/AuthContext.tsx`
   - **Requires:** (none)
 
-- [ ] 14. Halaman About — backend
+- [x] 14. Halaman About — backend
   - Tambahkan model `AboutSection` ke `backend/prisma/schema.prisma` sesuai definisi di design document
   - Jalankan `npx prisma migrate dev --name add_about_sections`; jalankan `npx prisma generate`
   - Buat `schemas/about.schema.ts` — Zod schema: type harus salah satu dari `['education','experience','skill','contact']`; title wajib; reorder schema memvalidasi array `{ id, order }`
@@ -58,7 +58,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
   - **Files:** `backend/prisma/schema.prisma`, `backend/src/schemas/about.schema.ts`, `backend/src/services/about.service.ts`, `backend/src/controllers/about.controller.ts`, `backend/src/routes/about.routes.ts`, `backend/src/app.ts`
   - **Requires:** (none)
 
-- [ ] 15. Halaman About — frontend (publik + admin)
+- [x] 15. Halaman About — frontend (publik + admin)
   - Instal `@dnd-kit/core` dan `@dnd-kit/sortable` di `frontend/` (`npm install @dnd-kit/core @dnd-kit/sortable`)
   - Tambahkan tipe `AboutSection` ke `frontend/src/types/index.ts`
   - Buat `api/about.ts` dengan fungsi `getAboutSections()`, `createSection()`, `updateSection()`, `deleteSection()`, `reorderSections()`
@@ -83,7 +83,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
   - **Files:** `frontend/src/types/index.ts`, `frontend/src/api/about.ts`, `frontend/src/hooks/useAbout.ts`, `frontend/src/components/about/TimelineSection.tsx`, `frontend/src/components/about/SkillsGrid.tsx`, `frontend/src/components/about/ContactList.tsx`, `frontend/src/pages/public/AboutPage.tsx`, `frontend/src/pages/admin/AboutAdminPage.tsx`, `frontend/src/App.tsx`, `frontend/src/components/layout/Navbar.tsx`
   - **Requires:** 14
 
-- [ ] 16. Projects — backend
+- [x] 16. Projects — backend
   - Tambahkan model `Project` dan `ProjectTag` ke `backend/prisma/schema.prisma`; tambahkan juga field back-relation `ProjectTag` ke model `Tag` yang ada
   - Jalankan `npx prisma migrate dev --name add_projects`; jalankan `npx prisma generate`
   - Ekstrak `generateUniqueSlug` dari `post.service.ts` ke `backend/src/lib/slugUtils.ts` dengan signature yang menerima Prisma query callback; perbarui `post.service.ts` untuk mengimpor dari sana
@@ -108,7 +108,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
   - **Files:** `backend/prisma/schema.prisma`, `backend/src/lib/slugUtils.ts`, `backend/src/schemas/project.schema.ts`, `backend/src/services/project.service.ts`, `backend/src/controllers/project.controller.ts`, `backend/src/routes/project.routes.ts`, `backend/src/app.ts`, `backend/src/services/post.service.ts`
   - **Requires:** (none)
 
-- [ ] 17. Projects — frontend (publik + admin)
+- [x] 17. Projects — frontend (publik + admin)
   - Tambahkan tipe `Project` ke `frontend/src/types/index.ts` (menyertakan `techTags`, `repoUrl`, `demoUrl`, `coverImageUrl`, `order`)
   - Buat `api/projects.ts` dengan fungsi API yang sudah di-type
   - Buat `hooks/useProjects.ts` menggunakan React Query
@@ -125,7 +125,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
   - **Files:** `frontend/src/types/index.ts`, `frontend/src/api/projects.ts`, `frontend/src/hooks/useProjects.ts`, `frontend/src/components/projects/ProjectCard.tsx`, `frontend/src/components/projects/ProjectList.tsx`, `frontend/src/pages/public/ProjectsPage.tsx`, `frontend/src/pages/public/ProjectDetailPage.tsx`, `frontend/src/pages/admin/ProjectsAdminPage.tsx`, `frontend/src/pages/admin/ProjectEditorPage.tsx`, `frontend/src/App.tsx`, `frontend/src/components/layout/Navbar.tsx`
   - **Requires:** 16
 
-- [ ] 18. Seksi Fun — backend + frontend
+- [x] 18. Seksi Fun — backend + frontend
   - **Backend**:
     - Tambahkan model `FunPost` dan `FunTag` ke `backend/prisma/schema.prisma`; tambahkan juga field back-relation `FunTag` ke model `Tag` yang ada
     - Jalankan `npx prisma migrate dev --name add_fun_posts`; jalankan `npx prisma generate`
@@ -155,7 +155,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
   - **Files:** `backend/prisma/schema.prisma`, `backend/src/schemas/fun.schema.ts`, `backend/src/services/fun.service.ts`, `backend/src/controllers/fun.controller.ts`, `backend/src/routes/fun.routes.ts`, `frontend/src/types/index.ts`, `frontend/src/api/fun.ts`, `frontend/src/hooks/useFun.ts`, `frontend/src/components/fun/FunCard.tsx`, `frontend/src/components/fun/FunFeed.tsx`, `frontend/src/components/fun/FeedFilter.tsx`, `frontend/src/pages/public/FunPage.tsx`, `frontend/src/pages/public/FunDetailPage.tsx`, `frontend/src/pages/admin/FunAdminPage.tsx`, `frontend/src/pages/admin/FunEditorPage.tsx`, `frontend/src/App.tsx`, `frontend/src/components/layout/Navbar.tsx`
   - **Requires:** (none)
 
-- [ ] 19. Landing page + pembaruan dashboard admin
+- [x] 19. Landing page + pembaruan dashboard admin
   - Ganti stub `LandingPage.tsx` dari Task 13 dengan implementasi penuh:
     - **Seksi Hero** (statis): nama/brand, tagline, dua tombol CTA shadcn `Button` menuju `/blog` dan `/about`
     - **About teaser**: hook `useAbout`, render 3 pertama bertipe `experience` atau `skill` dalam layout horizontal kompak menggunakan shadcn Card
@@ -176,21 +176,7 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
   - **Files:** `frontend/src/pages/public/LandingPage.tsx`, `frontend/src/components/layout/Navbar.tsx`, `frontend/src/pages/admin/DashboardPage.tsx`, `frontend/src/App.tsx`
   - **Requires:** 15, 17, 18
 
-
-## Notes
-
-- Task 13, 14, 16, dan 18 tidak memiliki dependensi dan dapat dikerjakan secara paralel dalam wave 0.
-- Task 15 (About frontend) memerlukan Task 14 selesai terlebih dahulu.
-- Task 17 (Projects frontend) memerlukan Task 16 selesai terlebih dahulu.
-- Task 19 (Landing page) memerlukan Task 15, 17, dan 18 selesai sehingga semua komponen teaser tersedia.
-- Migration harus dijalankan dalam urutan: `add_about_sections` → `add_projects` → `add_fun_posts`.
-- Task 16 mengekstrak `generateUniqueSlug` ke `slugUtils.ts` dan memperbarui `post.service.ts` untuk mengimpor dari sana — pastikan tidak ada regresi pada fungsionalitas slug post yang ada.
-- Task 18 juga menambahkan back-relation FunTag ke model `Tag` di `schema.prisma` (sama seperti Task 16 menambahkan back-relation ProjectTag).
-- Stage 2 tidak memperkenalkan perubahan pada skema komentar — sistem komentar generik dari Stage 1 digunakan langsung via `contentType` dan `contentId`.
-- `@dnd-kit/core` dan `@dnd-kit/sortable` hanya diinstal di `frontend/` — tidak ada dependensi backend baru.
-
-
-- [ ] 20. Tombol kembali (back button) � Stage 2 pages
+- [x] 20. Tombol kembali (back button) � Stage 2 pages
   - **`PostDetailPage`**: update tombol kembali dari Stage 1 � ubah target dari `/` menjadi `/blog` (setelah migrasi rute Task 13 selesai)
   - **`ProjectDetailPage`**: tambahkan tombol `<Button variant="ghost">← Kembali ke Projects</Button>` di atas judul yang menavigasi ke `/projects`
   - **`FunDetailPage`**: tambahkan tombol `<Button variant="ghost">← Kembali ke Fun</Button>` di atas judul yang menavigasi ke `/fun`
@@ -205,3 +191,15 @@ Task dinomori melanjutkan dari Stage 1 (yang berakhir di Task 13) untuk keterlac
   - Component test: `ProjectEditorPage` merender tombol "← Kembali ke Projects" dengan navigasi ke `/admin/projects`
   - **Files:** `frontend/src/pages/public/PostDetailPage.tsx`, `frontend/src/pages/public/ProjectDetailPage.tsx`, `frontend/src/pages/public/FunDetailPage.tsx`, `frontend/src/pages/public/AboutPage.tsx`, `frontend/src/pages/admin/ProjectEditorPage.tsx`, `frontend/src/pages/admin/FunEditorPage.tsx`
   - **Requires:** 13, 17, 18
+
+## Notes
+
+- Task 13, 14, 16, dan 18 tidak memiliki dependensi dan dapat dikerjakan secara paralel dalam wave 0.
+- Task 15 (About frontend) memerlukan Task 14 selesai terlebih dahulu.
+- Task 17 (Projects frontend) memerlukan Task 16 selesai terlebih dahulu.
+- Task 19 (Landing page) memerlukan Task 15, 17, dan 18 selesai sehingga semua komponen teaser tersedia.
+- Migration harus dijalankan dalam urutan: `add_about_sections` → `add_projects` → `add_fun_posts`.
+- Task 16 mengekstrak `generateUniqueSlug` ke `slugUtils.ts` dan memperbarui `post.service.ts` untuk mengimpor dari sana — pastikan tidak ada regresi pada fungsionalitas slug post yang ada.
+- Task 18 juga menambahkan back-relation FunTag ke model `Tag` di `schema.prisma` (sama seperti Task 16 menambahkan back-relation ProjectTag).
+- Stage 2 tidak memperkenalkan perubahan pada skema komentar — sistem komentar generik dari Stage 1 digunakan langsung via `contentType` dan `contentId`.
+- `@dnd-kit/core` dan `@dnd-kit/sortable` hanya diinstal di `frontend/` — tidak ada dependensi backend baru.

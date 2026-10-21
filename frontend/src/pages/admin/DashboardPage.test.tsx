@@ -6,12 +6,16 @@ import { MemoryRouter } from 'react-router-dom';
 import DashboardPage from './DashboardPage';
 import type { Post, PaginatedResponse } from '../../types';
 
-// ── Mock API module ───────────────────────────────────────────────────────────
+// ── Mock API modules ──────────────────────────────────────────────────────────
 vi.mock('../../api/posts', () => ({
   getAllPosts: vi.fn(),
   publishPost: vi.fn(),
   unpublishPost: vi.fn(),
   deletePost: vi.fn(),
+}));
+
+vi.mock('../../api/admin', () => ({
+  getAdminStats: vi.fn(),
 }));
 
 import {
@@ -20,6 +24,11 @@ import {
   unpublishPost,
   deletePost,
 } from '../../api/posts';
+
+import { getAdminStats } from '../../api/admin';
+import type { AdminStats } from '../../api/admin';
+
+const mockGetAdminStats = vi.mocked(getAdminStats);
 
 const mockGetAllPosts = vi.mocked(getAllPosts);
 const mockPublishPost = vi.mocked(publishPost);
@@ -52,6 +61,20 @@ function pageWithPosts(posts: Post[]): PaginatedResponse<Post> {
   return { data: posts, total: posts.length, page: 1, pageSize: 20, totalPages: 1 };
 }
 
+function makeStats(overrides: Partial<AdminStats> = {}): AdminStats {
+  return {
+    totalPosts: 5,
+    totalComments: 12,
+    totalUsers: 3,
+    totalProjects: 7,
+    totalFunPosts: 4,
+    recentPosts: [],
+    recentComments: [],
+    recentUsers: [],
+    ...overrides,
+  };
+}
+
 function renderDashboard() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -70,6 +93,8 @@ function renderDashboard() {
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: stats returns empty data so existing tests don't need to change
+    mockGetAdminStats.mockResolvedValue(makeStats());
   });
 
   // ── Loading state ────────────────────────────────────────────────────────
@@ -296,5 +321,65 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/gagal menghapus/i)).toBeInTheDocument();
+  });
+});
+
+describe('DashboardPage — stat cards Projects dan Fun', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetAllPosts.mockResolvedValue(emptyPage());
+  });
+
+  it('menampilkan stat card "Total Projects" dengan nilai yang benar', async () => {
+    mockGetAdminStats.mockResolvedValue(makeStats({ totalProjects: 7 }));
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Total Projects')).toBeInTheDocument();
+    });
+    expect(screen.getByText('7')).toBeInTheDocument();
+  });
+
+  it('menampilkan stat card "Total Fun Posts" dengan nilai yang benar', async () => {
+    mockGetAdminStats.mockResolvedValue(makeStats({ totalFunPosts: 4 }));
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Total Fun Posts')).toBeInTheDocument();
+    });
+    expect(screen.getByText('4')).toBeInTheDocument();
+  });
+
+  it('menampilkan 5 stat cards setelah stats berhasil dimuat', async () => {
+    mockGetAdminStats.mockResolvedValue(makeStats({
+      totalPosts: 10,
+      totalComments: 20,
+      totalUsers: 5,
+      totalProjects: 8,
+      totalFunPosts: 3,
+    }));
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Total Postingan')).toBeInTheDocument();
+      expect(screen.getByText('Total Komentar')).toBeInTheDocument();
+      expect(screen.getByText('Total Pengguna')).toBeInTheDocument();
+      expect(screen.getByText('Total Projects')).toBeInTheDocument();
+      expect(screen.getByText('Total Fun Posts')).toBeInTheDocument();
+    });
+  });
+
+  it('menampilkan tautan ke halaman admin fun di quick links', async () => {
+    mockGetAdminStats.mockResolvedValue(makeStats());
+
+    renderDashboard();
+
+    await waitFor(() => {
+      // Quick action button for Fun
+      expect(screen.getByRole('button', { name: /^fun$/i })).toBeInTheDocument();
+    });
   });
 });

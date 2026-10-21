@@ -34,6 +34,8 @@ export interface AdminStats {
   totalPosts: number;
   totalComments: number;
   totalUsers: number;
+  totalProjects: number;
+  totalFunPosts: number;
   recentPosts: RecentPost[];
   recentComments: RecentComment[];
   recentUsers: RecentUser[];

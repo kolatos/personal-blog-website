@@ -8,6 +8,9 @@ import legacyCommentRouter, { commentRouter } from './routes/comment.routes.js';
 import userRouter from './routes/user.routes.js';
 import subscriptionRouter from './routes/subscription.routes.js';
 import adminRouter from './routes/admin.routes.js';
+import aboutRouter from './routes/about.routes.js';
+import projectRouter from './routes/project.routes.js';
+import funRouter from './routes/fun.routes.js';
 
 /**
  * Express application instance.
@@ -85,6 +88,24 @@ app.use('/api/subscriptions', subscriptionRouter);
  * Requirements: 7.1, 7.3, 7.4, 7.6
  */
 app.use('/api/admin', adminRouter);
+
+/**
+ * About routes — CMS-managed personal profile sections
+ * Requirements: 2.x
+ */
+app.use('/api/about', aboutRouter);
+
+/**
+ * Project routes — CMS-managed portfolio projects
+ * Requirements: 3.x (Stage 2)
+ */
+app.use('/api/projects', projectRouter);
+
+/**
+ * Fun routes — CMS-managed fun posts (reviews, images, music, etc.)
+ * Requirements: 4.x (Stage 2)
+ */
+app.use('/api/fun', funRouter);
 
 // --- 404 handler --------------------------------------------------------------
 

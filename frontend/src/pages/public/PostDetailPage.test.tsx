@@ -68,7 +68,7 @@ describe('PostDetailPage — tombol kembali', () => {
     vi.clearAllMocks();
   });
 
-  it('renders back button linking to "/" (blog root)', async () => {
+  it('renders back button linking to "/blog" (blog root)', async () => {
     mockGetPostBySlug.mockResolvedValue(makePost());
 
     renderPostDetailPage();
@@ -76,7 +76,7 @@ describe('PostDetailPage — tombol kembali', () => {
     // Back button/link should appear after post loads
     const backLink = await screen.findByTestId('back-to-blog');
     expect(backLink).toBeInTheDocument();
-    expect(backLink).toHaveAttribute('href', '/');
+    expect(backLink).toHaveAttribute('href', '/blog');
   });
 
   it('back button text contains "Kembali ke Blog"', async () => {

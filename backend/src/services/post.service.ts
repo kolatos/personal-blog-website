@@ -1,6 +1,7 @@
-import slugify from 'slugify';
 import { marked } from 'marked';
+import slugify from 'slugify';
 import prisma from '../lib/prisma.js';
+import { generateUniqueSlug as _generateUniqueSlug } from '../lib/slugUtils.js';
 import { mailService } from './mail.service.js';
 import { getAllSubscriberEmails } from './subscription.service.js';
 import type {
@@ -173,38 +174,25 @@ const tagsInclude = {
  * Generates a URL-safe slug from the title using `slugify`, then ensures
  * uniqueness by appending a numeric suffix (-2, -3, …) if a collision exists.
  *
+ * Delegates to the shared slugUtils utility.
+ *
  * Requirements: 3.1, 3.2
  */
 export async function generateUniqueSlug(title: string): Promise<string> {
-  const base = slugify(title, { lower: true, strict: true, trim: true });
-
-  // Check if the base slug already exists
-  const existing = await prisma.post.findUnique({ where: { slug: base } });
-  if (!existing) {
-    return base;
-  }
-
-  // Find the highest existing numeric suffix for this base slug
-  const conflicts = await prisma.post.findMany({
-    where: {
-      slug: {
-        startsWith: `${base}-`,
-      },
+  return _generateUniqueSlug(
+    title,
+    async (slug) => {
+      const existing = await prisma.post.findUnique({ where: { slug } });
+      return existing !== null;
     },
-    select: { slug: true },
-  });
-
-  // Extract numeric suffixes and find the maximum
-  let maxSuffix = 1;
-  for (const { slug } of conflicts) {
-    const suffix = slug.slice(base.length + 1);
-    const num = parseInt(suffix, 10);
-    if (!isNaN(num) && num > maxSuffix) {
-      maxSuffix = num;
+    async (prefix) => {
+      const conflicts = await prisma.post.findMany({
+        where: { slug: { startsWith: prefix } },
+        select: { slug: true },
+      });
+      return conflicts.map((c) => c.slug);
     }
-  }
-
-  return `${base}-${maxSuffix + 1}`;
+  );
 }
 
 // ─── createPost ──────────────────────────────────────────────────────────────

@@ -61,3 +61,60 @@ export interface ErrorResponse {
     fields?: Record<string, string>;
   };
 }
+
+// ── Project ───────────────────────────────────────────────────────────────────
+
+export interface Project {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  contentHtml: string;
+  status: 'draft' | 'published';
+  repoUrl?: string;
+  demoUrl?: string;
+  coverImageUrl?: string;
+  order: number;
+  techTags: TagSummary[];
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── About ─────────────────────────────────────────────────────────────────────
+
+export type AboutSectionType = 'education' | 'experience' | 'skill' | 'contact';
+
+export interface AboutSection {
+  id: string;
+  type: AboutSectionType;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  order: number;
+  metadata?: Record<string, string>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Fun ───────────────────────────────────────────────────────────────────────
+
+export type FunPostType = 'text' | 'review' | 'image' | 'drawing' | 'music' | 'interactive';
+
+export interface FunPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string;
+  contentHtml: string;
+  status: 'draft' | 'published';
+  type: FunPostType;
+  mediaUrl?: string | null;
+  tags: TagSummary[];
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

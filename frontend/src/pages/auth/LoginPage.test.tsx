@@ -96,7 +96,7 @@ describe('LoginPage', () => {
           email: 'user@example.com',
           password: 'password123',
         });
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        expect(mockNavigate).toHaveBeenCalledWith('/blog');
       });
     });
 

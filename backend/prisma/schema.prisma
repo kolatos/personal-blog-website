@@ -42,12 +42,44 @@ model Post {
 }
 
 model Tag {
-  id    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name  String    @unique @db.VarChar(100)
-  slug  String    @unique @db.VarChar(110)
-  posts PostTag[]
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String       @unique @db.VarChar(100)
+  slug        String       @unique @db.VarChar(110)
+  posts       PostTag[]
+  projectTags ProjectTag[]
+  funTags     FunTag[]
 
   @@map("tags")
+}
+
+model Project {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String       @db.VarChar(200)
+  slug          String       @unique @db.VarChar(220)
+  description   String       @db.Text
+  status        String       @default("draft") @db.VarChar(10)
+  repoUrl       String?      @map("repo_url") @db.VarChar(500)
+  demoUrl       String?      @map("demo_url") @db.VarChar(500)
+  coverImageUrl String?      @map("cover_image_url") @db.VarChar(500)
+  order         Int          @default(0)
+  publishedAt   DateTime?    @map("published_at") @db.Timestamptz()
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  techTags      ProjectTag[]
+
+  @@index([status, order], name: "idx_projects_status_order")
+  @@index([slug], name: "idx_projects_slug")
+  @@map("projects")
+}
+
+model ProjectTag {
+  projectId String  @map("project_id") @db.Uuid
+  tagId     String  @map("tag_id") @db.Uuid
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+  @@map("project_tags")
 }
 
 model PostTag {
@@ -106,4 +138,50 @@ model Subscription {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
+}
+
+model AboutSection {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type        String    @db.VarChar(20)
+  title       String    @db.VarChar(200)
+  subtitle    String?   @db.VarChar(200)
+  description String?   @db.Text
+  startDate   DateTime? @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  order       Int       @default(0)
+  metadata    Json?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([type, order])
+  @@map("about_sections")
+}
+
+model FunPost {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String    @db.VarChar(200)
+  slug        String    @unique @db.VarChar(220)
+  excerpt     String?   @db.VarChar(500)
+  content     String    @db.Text
+  status      String    @default("draft") @db.VarChar(10)
+  type        String    @db.VarChar(20)
+  mediaUrl    String?   @map("media_url") @db.VarChar(500)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz()
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  tags        FunTag[]
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([slug])
+  @@map("fun_posts")
+}
+
+model FunTag {
+  funPostId String  @map("fun_post_id") @db.Uuid
+  tagId     String  @map("tag_id") @db.Uuid
+  funPost   FunPost @relation(fields: [funPostId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([funPostId, tagId])
+  @@map("fun_tags")
 }

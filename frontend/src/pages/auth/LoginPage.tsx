@@ -38,7 +38,7 @@ export default function LoginPage() {
       if (user.role === 'admin') {
         navigate('/admin');
       } else {
-        navigate('/');
+        navigate('/blog');
       }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
@@ -65,7 +65,7 @@ export default function LoginPage() {
     if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate('/');
+      navigate('/blog');
     }
   }
 

@@ -201,6 +201,8 @@ describe('GET /api/admin/stats', () => {
     expect(res.body).toHaveProperty('totalPosts');
     expect(res.body).toHaveProperty('totalComments');
     expect(res.body).toHaveProperty('totalUsers');
+    expect(res.body).toHaveProperty('totalProjects');
+    expect(res.body).toHaveProperty('totalFunPosts');
     expect(res.body).toHaveProperty('recentPosts');
     expect(res.body).toHaveProperty('recentComments');
     expect(res.body).toHaveProperty('recentUsers');
@@ -209,9 +211,23 @@ describe('GET /api/admin/stats', () => {
     expect(typeof res.body.totalPosts).toBe('number');
     expect(typeof res.body.totalComments).toBe('number');
     expect(typeof res.body.totalUsers).toBe('number');
+    expect(typeof res.body.totalProjects).toBe('number');
+    expect(typeof res.body.totalFunPosts).toBe('number');
     expect(Array.isArray(res.body.recentPosts)).toBe(true);
     expect(Array.isArray(res.body.recentComments)).toBe(true);
     expect(Array.isArray(res.body.recentUsers)).toBe(true);
+  });
+
+  it('mengembalikan totalProjects dan totalFunPosts sebagai angka non-negatif', async () => {
+    if (!dbAvailable) return;
+
+    const res = await request(app)
+      .get('/api/admin/stats')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalProjects).toBeGreaterThanOrEqual(0);
+    expect(res.body.totalFunPosts).toBeGreaterThanOrEqual(0);
   });
 
   it('mengembalikan nilai aggregate yang benar', async () => {

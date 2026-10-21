@@ -33,6 +33,8 @@ export async function getStats(
       totalPosts,
       totalComments,
       totalUsers,
+      totalProjects,
+      totalFunPosts,
       recentPosts,
       recentComments,
       recentUsers,
@@ -40,6 +42,8 @@ export async function getStats(
       prisma.post.count(),
       prisma.comment.count(),
       prisma.user.count(),
+      prisma.project.count(),
+      prisma.funPost.count(),
       prisma.post.findMany({
         orderBy: { updatedAt: 'desc' },
         take: 5,
@@ -86,6 +90,8 @@ export async function getStats(
       totalPosts,
       totalComments,
       totalUsers,
+      totalProjects,
+      totalFunPosts,
       recentPosts: recentPosts.map((p) => ({
         ...p,
         publishedAt: p.publishedAt?.toISOString() ?? null,
@@ -179,7 +185,7 @@ export async function deleteUser(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id: string = req.params.id;
+    const id = req.params.id as string;
 
     // Cegah admin menghapus dirinya sendiri
     if (req.user!.sub === id) {
@@ -274,23 +280,54 @@ export async function getComments(
 
 /**
  * Resolve content titles for a list of comment-like objects.
- * Saat ini hanya mendukung contentType = 'post'.
- * Stage 2/3 dapat memperluas ini dengan projects, fun, modules.
+ * Mendukung contentType = 'post', 'project', dan 'fun'.
+ * Stage 3 dapat memperluas ini dengan modules.
  */
 async function resolveContentTitles(
   items: { contentType: string; contentId: string }[],
 ): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+
   const postIds = items
     .filter((c) => c.contentType === 'post')
     .map((c) => c.contentId);
 
+  const projectIds = items
+    .filter((c) => c.contentType === 'project')
+    .map((c) => c.contentId);
+
+  const funIds = items
+    .filter((c) => c.contentType === 'fun')
+    .map((c) => c.contentId);
+
   const uniquePostIds = [...new Set(postIds)];
-  if (uniquePostIds.length === 0) return new Map();
+  const uniqueProjectIds = [...new Set(projectIds)];
+  const uniqueFunIds = [...new Set(funIds)];
 
-  const posts = await prisma.post.findMany({
-    where: { id: { in: uniquePostIds } },
-    select: { id: true, title: true },
-  });
+  const [posts, projects, funPosts] = await Promise.all([
+    uniquePostIds.length > 0
+      ? prisma.post.findMany({
+          where: { id: { in: uniquePostIds } },
+          select: { id: true, title: true },
+        })
+      : Promise.resolve([]),
+    uniqueProjectIds.length > 0
+      ? prisma.project.findMany({
+          where: { id: { in: uniqueProjectIds } },
+          select: { id: true, title: true },
+        })
+      : Promise.resolve([]),
+    uniqueFunIds.length > 0
+      ? prisma.funPost.findMany({
+          where: { id: { in: uniqueFunIds } },
+          select: { id: true, title: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
-  return new Map(posts.map((p) => [p.id, p.title]));
+  for (const p of posts) result.set(p.id, p.title);
+  for (const p of projects) result.set(p.id, p.title);
+  for (const f of funPosts) result.set(f.id, f.title);
+
+  return result;
 }

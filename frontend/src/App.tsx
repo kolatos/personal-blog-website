@@ -5,9 +5,15 @@ import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 
 // Public pages
-import HomePage from './pages/public/HomePage';
+import LandingPage from './pages/public/LandingPage';
+import BlogPage from './pages/public/BlogPage';
 import PostDetailPage from './pages/public/PostDetailPage';
 import SearchPage from './pages/public/SearchPage';
+import AboutPage from './pages/public/AboutPage';
+import ProjectsPage from './pages/public/ProjectsPage';
+import ProjectDetailPage from './pages/public/ProjectDetailPage';
+import FunPage from './pages/public/FunPage';
+import FunDetailPage from './pages/public/FunDetailPage';
 
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
@@ -19,6 +25,11 @@ import CreatePostPage from './pages/admin/CreatePostPage';
 import EditPostPage from './pages/admin/EditPostPage';
 import UsersAdminPage from './pages/admin/UsersAdminPage';
 import CommentsAdminPage from './pages/admin/CommentsAdminPage';
+import AboutAdminPage from './pages/admin/AboutAdminPage';
+import ProjectsAdminPage from './pages/admin/ProjectsAdminPage';
+import ProjectEditorPage from './pages/admin/ProjectEditorPage';
+import FunAdminPage from './pages/admin/FunAdminPage';
+import FunEditorPage from './pages/admin/FunEditorPage';
 
 // User pages
 import ProfilePage from './pages/user/ProfilePage';
@@ -43,7 +54,15 @@ function App() {
               path="/"
               element={
                 <Layout>
-                  <HomePage />
+                  <LandingPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/blog"
+              element={
+                <Layout>
+                  <BlogPage />
                 </Layout>
               }
             />
@@ -60,6 +79,46 @@ function App() {
               element={
                 <Layout>
                   <SearchPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/about"
+              element={
+                <Layout>
+                  <AboutPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/projects"
+              element={
+                <Layout>
+                  <ProjectsPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/projects/:slug"
+              element={
+                <Layout>
+                  <ProjectDetailPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/fun"
+              element={
+                <Layout>
+                  <FunPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/fun/:slug"
+              element={
+                <Layout>
+                  <FunDetailPage />
                 </Layout>
               }
             />
@@ -107,6 +166,62 @@ function App() {
                 element={
                   <Layout>
                     <CommentsAdminPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/about"
+                element={
+                  <Layout>
+                    <AboutAdminPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/projects"
+                element={
+                  <Layout>
+                    <ProjectsAdminPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/projects/new"
+                element={
+                  <Layout>
+                    <ProjectEditorPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/projects/:id/edit"
+                element={
+                  <Layout>
+                    <ProjectEditorPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/fun"
+                element={
+                  <Layout>
+                    <FunAdminPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/fun/new"
+                element={
+                  <Layout>
+                    <FunEditorPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/fun/:id/edit"
+                element={
+                  <Layout>
+                    <FunEditorPage />
                   </Layout>
                 }
               />

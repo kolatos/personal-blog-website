@@ -104,6 +104,27 @@ function UsersIcon() {
   );
 }
 
+function ProjectsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+}
+
+function FunIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -193,13 +214,15 @@ export default function DashboardPage() {
       {/* Stat cards */}
       <section aria-label="Statistik website" className="mb-8">
         {statsLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            <Skeleton className="h-24 rounded-lg" />
+            <Skeleton className="h-24 rounded-lg" />
             <Skeleton className="h-24 rounded-lg" />
             <Skeleton className="h-24 rounded-lg" />
             <Skeleton className="h-24 rounded-lg" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <StatCard
               label="Total Postingan"
               value={stats?.totalPosts ?? 0}
@@ -218,6 +241,18 @@ export default function DashboardPage() {
               icon={<UsersIcon />}
               href="/admin/users"
             />
+            <StatCard
+              label="Total Projects"
+              value={stats?.totalProjects ?? 0}
+              icon={<ProjectsIcon />}
+              href="/admin/projects"
+            />
+            <StatCard
+              label="Total Fun Posts"
+              value={stats?.totalFunPosts ?? 0}
+              icon={<FunIcon />}
+              href="/admin/fun"
+            />
           </div>
         )}
       </section>
@@ -225,7 +260,32 @@ export default function DashboardPage() {
       {/* Recent activity */}
       {stats && (
         <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Recent Comments */}
+          {/* Quick links to admin sections */}
+          <section aria-labelledby="admin-links-heading" className="lg:col-span-2">
+            <h2 id="admin-links-heading" className="text-lg font-semibold text-foreground mb-3">
+              Kelola Konten
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/posts/new')}>
+                + Postingan
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/projects')}>
+                Projects
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/fun')}>
+                Fun
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/about')}>
+                About
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/users')}>
+                Pengguna
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin/comments')}>
+                Komentar
+              </Button>
+            </div>
+          </section>
           <section aria-labelledby="recent-comments-heading">
             <div className="flex items-center justify-between mb-3">
               <h2 id="recent-comments-heading" className="text-lg font-semibold text-foreground">

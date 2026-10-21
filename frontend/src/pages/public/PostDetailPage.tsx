@@ -49,7 +49,7 @@ function NotFound() {
         Postingan yang kamu cari tidak ada atau belum dipublikasikan.
       </p>
       <Link
-        to="/"
+        to="/blog"
         className="inline-block mt-4 px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
       >
         ← Kembali ke Beranda
@@ -162,7 +162,7 @@ export default function PostDetailPage() {
       {/* Back button */}
       <div className="mb-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/" data-testid="back-to-blog">← Kembali ke Blog</Link>
+          <Link to="/blog" data-testid="back-to-blog">← Kembali ke Blog</Link>
         </Button>
       </div>
 
