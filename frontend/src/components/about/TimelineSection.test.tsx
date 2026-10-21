@@ -36,7 +36,7 @@ describe('TimelineSection', () => {
 
     render(<TimelineSection title="Pengalaman" sections={sections} />);
 
-    const items = screen.getAllByTestId(/sortable-row|timeline-list/);
+    screen.getAllByTestId(/sortable-row|timeline-list/);
     // Get rendered list items
     const list = screen.getByTestId('timeline-list');
     const listItems = list.querySelectorAll('li');

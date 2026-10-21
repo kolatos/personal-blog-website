@@ -464,7 +464,7 @@ export default function AboutAdminPage() {
     });
   }
 
-  function handleReorder(type: AboutSectionType, reordered: AboutSection[]) {
+  function handleReorder(_type: AboutSectionType, reordered: AboutSection[]) {
     const items = reordered.map((s, index) => ({ id: s.id, order: index }));
     reorder.mutate(items, {
       onError: () => setMutationError('Gagal menyimpan urutan baru.'),
